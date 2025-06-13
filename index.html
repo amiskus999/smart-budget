@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,84 +11,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-        /* Define CSS Variables for Light Mode */
-        :root {
-            --bg-page: #f3f4f6; /* Light gray background */
-            --bg-card: #ffffff; /* White card background */
-            --text-main: #1f2937; /* Dark gray text for titles/headings */
-            --text-secondary: #4b5563; /* Medium gray text for labels/details */
-            --border-default: #d1d5db; /* Light gray border */
-            --bg-input: #ffffff; /* White input background */
-            --text-input: #1f2937; /* Dark gray input text */
-            --placeholder-input: #6b7280; /* Gray placeholder text */
-
-            --header-footer-bg: #2563eb; /* Blue-600 */
-            --header-footer-text: #ffffff; /* White text for header/footer */
-            --toggle-button-bg: #1d4ed8; /* Blue-700 for toggle button */
-            --toggle-button-hover-bg: #60a5fa; /* Blue-400 for toggle hover */
-
-            /* Accent Colors */
-            --accent-blue-50: #eff6ff;
-            --accent-blue-200: #bfdbfe;
-            --accent-blue-300: #93c5fd;
-            --accent-blue-400: #60a5fa;
-            --accent-blue-700: #1d4ed8; /* Used for focus borders too */
-            --accent-red-500: #ef4444;
-            --accent-red-600: #dc2626;
-            --accent-green-500: #22c55e;
-            --accent-green-600: #16a34a;
-            --accent-indigo-500: #6366f1;
-            --accent-indigo-600: #4f46e5;
-            --accent-purple-600: #9333ea;
-            --accent-purple-700: #7e22ce;
-
-            /* Icon Colors */
-            --icon-sun: #fcd34d; /* Yellow-300 */
-            --icon-moon: #a5b4fc; /* Indigo-200 */
-        }
-
-        /* Define CSS Variables for Dark Mode */
-        html.dark {
-            --bg-page: #1A202C; /* Deeper, less stark dark background */
-            --bg-card: #2D3748; /* Slightly lighter than page background for elevation */
-            --text-main: #e2e8f0; /* Soft white text */
-            --text-secondary: #cbd5e0; /* Slightly darker light gray text */
-            --border-default: #4a5568; /* Darker, but visible border */
-            --bg-input: #2D3748; /* Input background matches card for consistency */
-            --text-input: #e2e8f0; /* Input text color */
-            --placeholder-input: #a0aec0; /* Softer placeholder color */
-
-            --header-footer-bg: #2C323E; /* Blends with new background, still distinct */
-            --header-footer-text: #e2e8f0; /* Matches main text color */
-            --toggle-button-bg: #4c525b; /* Darker, less vibrant toggle button */
-            --toggle-button-hover-bg: #616c7a; /* Lighter on hover */
-
-            /* Accent colors - adjusted for better visibility on dark backgrounds */
-            --accent-blue-50: #2a4365;
-            --accent-blue-200: #3182ce;
-            --accent-blue-300: #4299e1;
-            --accent-blue-400: #63b3ed;
-            --accent-blue-700: #90cdf4; /* Lighter blue for dark mode focus/accents */
-            --accent-red-500: #e53e3e;
-            --accent-red-600: #c53030;
-            --accent-green-500: #38a169;
-            --accent-green-600: #2f855a;
-            --accent-indigo-500: #667eea;
-            --accent-indigo-600: #5a67d8;
-            --accent-purple-600: #805ad5;
-            --accent-purple-700: #6b46c1;
-
-            /* Icon Colors */
-            --icon-sun: #f6ad55; /* Slightly warmer orange for sun */
-            --icon-moon: #a7d0dd; /* Slightly more muted blue for moon */
-        }
-
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-page);
-            color: var(--text-main);
-            transition: background-color 0.3s ease, color 0.3s ease;
+            background-color: #f3f4f6; /* Light gray background */
         }
         .container {
             max-width: 1024px;
@@ -95,36 +21,29 @@
             padding: 1.5rem;
         }
         .card {
-            background-color: var(--bg-card);
+            background-color: #ffffff;
             border-radius: 0.75rem; /* Rounded corners */
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             padding: 1.5rem;
             margin-bottom: 1.5rem;
-            transition: background-color 0.3s ease, box-shadow 0.3s ease;
         }
         /* Base input styling */
-        input[type="number"], input[type="text"], input[type="month"], select {
-            border: 1px solid var(--border-default);
+        input[type="number"], input[type="text"] {
+            border: 1px solid #d1d5db; /* Light gray border */
             border-radius: 0.375rem; /* Slightly rounded */
             padding: 0.625rem 0.875rem;
             width: 100%;
             box-sizing: border-box;
-            background-color: var(--bg-input);
-            color: var(--text-input);
-            transition: border-color 0.2s, background-color 0.3s ease, color 0.3s ease;
+            transition: border-color 0.2s;
         }
-        input[type="number"]:focus, input[type="text"]:focus, input[type="month"]:focus, select:focus {
+        input[type="number"]:focus, input[type="text"]:focus {
             outline: none;
-            border-color: var(--accent-blue-700);
+            border-color: #3b82f6; /* Blue focus border */
             box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-        }
-        /* Update placeholder color */
-        input::placeholder {
-            color: var(--placeholder-input);
         }
         /* General button styling, overridden by specific classes where needed */
         button {
-            color: #ffffff; /* Default button text color is white */
+            color: #ffffff;
             padding: 0.75rem 1.25rem;
             border-radius: 0.5rem;
             font-weight: 500;
@@ -133,17 +52,17 @@
         }
         /* Specific styling for the Save Budget button */
         button[type="submit"] {
-            background-color: var(--accent-blue-600);
+            background-color: #3b82f6; /* Blue background */
         }
         button[type="submit"]:hover {
-            background-color: var(--accent-blue-700);
+            background-color: #2563eb; /* Darker blue on hover */
             box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
         }
         .text-blue-600 {
-            color: var(--accent-blue-700);
+            color: #2563eb;
         }
         .bg-blue-100 {
-            background-color: var(--accent-blue-50);
+            background-color: #dbeafe;
         }
         /* Custom styling for the select dropdown for units (making it transparent and overlaid) */
         .expense-unit {
@@ -162,23 +81,6 @@
             z-index: 10; /* Ensure it's above the visual elements */
         }
 
-        /* The custom colored boxes for the unit display */
-        .expense-unit-wrapper {
-            background-color: var(--accent-blue-200);
-            border-left-color: var(--accent-blue-300);
-        }
-        .expense-unit-wrapper .expense-unit-display {
-            color: var(--accent-blue-700);
-        }
-        .expense-unit-wrapper .arrow-box {
-            background-color: var(--accent-blue-300);
-            border-left-color: var(--accent-blue-400);
-        }
-        .expense-unit-wrapper .arrow-box svg {
-            color: var(--accent-blue-700);
-        }
-
-
         /* Spinner animation */
         @keyframes spin {
             from {
@@ -191,57 +93,14 @@
         .animate-spin-custom {
             animation: spin 1s linear infinite;
         }
-
-        /* Specific classes for theme colors */
-        .header-bg { background-color: var(--header-footer-bg); }
-        .footer-bg { background-color: var(--header-footer-bg); }
-        .header-footer-text { color: var(--header-footer-text); } /* Applies to header and footer text */
-        .theme-toggle-bg { background-color: var(--toggle-button-bg); }
-        .hover\:theme-toggle-bg-hover:hover { background-color: var(--toggle-button-hover-bg); }
-
-        .text-gray-700 { color: var(--text-secondary); }
-        .text-gray-800 { color: var(--text-main); }
-        .text-gray-600 { color: var(--text-secondary); }
-        .text-gray-500 { color: var(--text-secondary); } /* Adjusted to text-secondary for better contrast */
-        .border-gray-300 { border-color: var(--border-default); }
-        .bg-gray-50 { background-color: var(--bg-card); } /* Ensure this uses card background */
-        .bg-gray-100 { background-color: var(--bg-page); } /* Ensure this uses page background */
-        .bg-red-500 { background-color: var(--accent-red-500); }
-        .hover\:bg-red-600:hover { background-color: var(--accent-red-600); }
-        .bg-green-500 { background-color: var(--accent-green-500); }
-        .hover\:bg-green-600:hover { background-color: var(--accent-green-600); }
-        .bg-indigo-500 { background-color: var(--accent-indigo-500); }
-        .hover\:bg-indigo-600:hover { background-color: var(--accent-indigo-600); }
-        .bg-purple-600 { background-color: var(--accent-purple-600); }
-        .hover\:bg-purple-700:hover { background-color: var(--accent-purple-700); }
-        .bg-gray-500 { background-color: var(--border-default); } /* Using border-default for general gray button */
-        .hover\:bg-gray-600:hover { background-color: var(--text-secondary); } /* Darker secondary for hover */
-        .text-purple-600 { color: var(--accent-purple-600); }
-        .text-red-500 { color: var(--accent-red-500); }
-
-        /* Icons */
-        #sun-icon { color: var(--icon-sun); }
-        #moon-icon { color: var(--icon-moon); }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col">
-    <header class="header-bg header-footer-text p-4 shadow-md">
+    <header class="bg-blue-600 text-white p-4 shadow-md">
         <div class="container flex justify-between items-center">
-            <h1 class="text-2xl font-bold">Smart Budgeting</h1>
-            <div class="flex items-center space-x-4">
-                <button id="theme-toggle" class="p-2 theme-toggle-bg rounded-full text-sm font-medium hover:theme-toggle-bg-hover transition-colors flex items-center justify-center">
-                    <!-- Sun icon (visible in light mode) -->
-                    <svg id="sun-icon" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.325 6.675l-.707-.707M6.083 6.083l-.707-.707m0 11.314l-.707.707m11.314 0l-.707-.707M12 7a5 5 0 100 10 5 5 0 000-10z" />
-                    </svg>
-                    <!-- Moon icon (visible in dark mode) -->
-                    <svg id="moon-icon" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                    </svg>
-                </button>
-                <div id="user-info" class="text-sm">
-                    User ID: <span id="user-id" class="font-semibold">Loading...</span>
-                </div>
+            <h1 class="text-2xl font-bold">Budget with Johnson</h1>
+            <div id="user-info" class="text-sm">
+                User ID: <span id="user-id" class="font-semibold">Loading...</span>
             </div>
         </div>
     </header>
@@ -265,11 +124,11 @@
                             <input type="number" step="0.01" min="0" placeholder="Amount" class="expense-amount flex-grow p-2 focus:outline-none border-none bg-transparent">
 
                             <!-- New wrapper for the custom unit display and hidden select -->
-                            <div class="relative flex items-center expense-unit-wrapper border-l rounded-r-md w-24">
-                                <span class="expense-unit-display px-3 py-2 font-medium"></span>
-                                <div class="w-8 h-full flex items-center justify-center arrow-box rounded-r-md border-l">
+                            <div class="relative flex items-center bg-blue-200 border-l border-blue-300 rounded-r-md w-24">
+                                <span class="expense-unit-display px-3 py-2 text-blue-800 font-medium"></span>
+                                <div class="w-8 h-full flex items-center justify-center bg-blue-300 rounded-r-md border-l border-blue-400">
                                     <!-- SVG Arrow -->
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                     </svg>
                                 </div>
@@ -391,7 +250,7 @@
         </div>
     </main>
 
-    <footer class="footer-bg header-footer-text p-4 text-center text-sm mt-6">
+    <footer class="bg-gray-800 text-white p-4 text-center text-sm mt-6">
         <p>&copy; 2024 Smart Budgeting App. All rights reserved.</p>
     </footer>
 
@@ -769,11 +628,11 @@
                     <input type="number" step="0.01" min="0" placeholder="Amount" class="expense-amount flex-grow p-2 focus:outline-none border-none bg-transparent" value="${amount}">
 
                     <!-- New wrapper for the custom unit display and hidden select -->
-                    <div class="relative flex items-center expense-unit-wrapper border-l rounded-r-md w-24">
-                        <span class="expense-unit-display px-3 py-2 font-medium"></span>
-                        <div class="w-8 h-full flex items-center justify-center arrow-box rounded-r-md border-l">
+                    <div class="relative flex items-center bg-blue-200 border-l border-blue-300 rounded-r-md w-24">
+                        <span class="expense-unit-display px-3 py-2 text-blue-800 font-medium"></span>
+                        <div class="w-8 h-full flex items-center justify-center bg-blue-300 rounded-r-md border-l border-blue-400">
                             <!-- SVG Arrow -->
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                             </svg>
                         </div>
@@ -907,7 +766,7 @@
             const expenses = {};
             document.querySelectorAll('#expense-inputs .expense-item').forEach((expenseItemDiv) => {
                 const categoryInput = expenseItemDiv.querySelector('.expense-category');
-                const amountInput = expenseItem.querySelector('.expense-amount');
+                const amountInput = expenseItemDiv.querySelector('.expense-amount');
                 const unitSelect = expenseItemDiv.querySelector('.expense-unit');
 
                 const categoryName = categoryInput.value.trim();
@@ -1132,45 +991,6 @@
             } finally {
                 loadingSpinner.classList.add('hidden'); // Hide loading spinner
             }
-        }
-
-        // --- Theme Toggle Logic ---
-        const themeToggleBtn = document.getElementById('theme-toggle');
-        const htmlElement = document.documentElement; // This is the <html> tag
-        const sunIcon = document.getElementById('sun-icon');
-        const moonIcon = document.getElementById('moon-icon');
-
-        // Function to set the theme based on preference
-        function setTheme(theme) {
-            if (theme === 'dark') {
-                htmlElement.classList.add('dark');
-                sunIcon.classList.add('hidden');
-                moonIcon.classList.remove('hidden');
-                localStorage.theme = 'dark';
-            } else {
-                htmlElement.classList.remove('dark');
-                sunIcon.classList.remove('hidden');
-                moonIcon.classList.add('hidden');
-                localStorage.theme = 'light';
-            }
-        }
-
-        // Check for saved theme preference on initial load
-        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            setTheme('dark');
-        } else {
-            setTheme('light');
-        }
-
-        // Add event listener to the toggle button
-        if (themeToggleBtn) {
-            themeToggleBtn.addEventListener('click', () => {
-                if (htmlElement.classList.contains('dark')) {
-                    setTheme('light');
-                } else {
-                    setTheme('dark');
-                }
-            });
         }
     </script>
 </body>
