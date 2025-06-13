@@ -3,994 +3,778 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Budgeting</title>
+    <title>Smart Budget Planner</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js CDN for charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6; /* Light gray background */
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
-        .container {
-            max-width: 1024px;
-            margin: 0 auto;
-            padding: 1.5rem;
+        /* Light mode default styles */
+        body {
+            background-color: #f3f4f6; /* Light gray background */
+            color: #1f2937; /* Dark text */
+        }
+        .dark body {
+            background-color: #1a202c; /* Dark background */
+            color: #e2e8f0; /* Light text */
         }
         .card {
-            background-color: #ffffff;
-            border-radius: 0.75rem; /* Rounded corners */
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-        /* Base input styling */
-        input[type="number"], input[type="text"] {
-            border: 1px solid #d1d5db; /* Light gray border */
-            border-radius: 0.375rem; /* Slightly rounded */
-            padding: 0.625rem 0.875rem;
-            width: 100%;
-            box-sizing: border-box;
-            transition: border-color 0.2s;
-        }
-        input[type="number"]:focus, input[type="text"]:focus {
-            outline: none;
-            border-color: #3b82f6; /* Blue focus border */
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-        }
-        /* General button styling, overridden by specific classes where needed */
-        button {
-            color: #ffffff;
-            padding: 0.75rem 1.25rem;
+            background-color: #ffffff; /* White card background */
             border-radius: 0.5rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
-        /* Specific styling for the Save Budget button */
-        button[type="submit"] {
-            background-color: #3b82f6; /* Blue background */
+        .dark .card {
+            background-color: #2d3748; /* Darker card background */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
         }
-        button[type="submit"]:hover {
-            background-color: #2563eb; /* Darker blue on hover */
-            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+        input[type="number"], input[type="text"], select {
+            background-color: #edf2f7; /* Light input background */
+            border: 1px solid #cbd5e0;
         }
-        .text-blue-600 {
-            color: #2563eb;
+        .dark input[type="number"], .dark input[type="text"], .dark select {
+            background-color: #4a5568; /* Dark input background */
+            border: 1px solid #2d3748;
+            color: #e2e8f0;
         }
-        .bg-blue-100 {
-            background-color: #dbeafe;
+        button {
+            transition: background-color 0.2s ease;
         }
-        /* Custom styling for the select dropdown for units (making it transparent and overlaid) */
-        .expense-unit {
+        button:hover {
+            opacity: 0.9;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
             position: absolute;
+            cursor: pointer;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0; /* Make it invisible */
-            cursor: pointer;
-            appearance: none; /* Remove default dropdown arrow */
-            background: transparent;
-            border: none;
-            padding: 0;
-            margin: 0;
-            z-index: 10; /* Ensure it's above the visual elements */
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 34px;
         }
-
-        /* Spinner animation */
-        @keyframes spin {
-            from {
-                transform: rotate(0deg);
-            }
-            to {
-                transform: rotate(360deg);
-            }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 50%;
         }
-        .animate-spin-custom {
-            animation: spin 1s linear infinite;
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:focus + .slider {
+            box-shadow: 0 0 1px #2196F3;
+        }
+        input:checked + .slider:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+        }
+        /* Style for the remove button symbol */
+        .remove-btn-symbol {
+            font-weight: bold; /* Make the 'x' bolder */
+            font-size: 1.25rem; /* Adjust size if needed */
+            line-height: 1; /* Align vertically */
+            padding: 0.5rem 0.75rem; /* Smaller padding for a compact button */
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
-    <header class="bg-blue-600 text-white p-4 shadow-md">
-        <div class="container flex justify-between items-center">
-            <h1 class="text-2xl font-bold">Budget with Johnson</h1>
-            <div id="user-info" class="text-sm">
-                User ID: <span id="user-id" class="font-semibold">Loading...</span>
-            </div>
+<body class="min-h-screen flex flex-col items-center py-8 px-4">
+
+    <!-- Header -->
+    <header class="w-full max-w-4xl flex justify-between items-center mb-8">
+        <h1 class="text-4xl font-bold text-blue-600 dark:text-blue-400">Smart Budget Planner</h1>
+        <div class="flex items-center space-x-2">
+            <span class="text-gray-700 dark:text-gray-300">Light</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="darkModeToggle">
+                <span class="slider"></span>
+            </label>
+            <span class="text-gray-700 dark:text-gray-300">Dark</span>
         </div>
     </header>
 
-    <main class="flex-grow container mt-6">
-        <!-- Budget Input Section -->
-        <div class="card">
-            <h2 class="text-xl font-semibold mb-4 text-gray-800">Monthly Budget Setup</h2>
-            <form id="budget-form" class="space-y-4">
-                <div>
-                    <label for="income" class="block text-gray-700 text-sm font-medium mb-1">Monthly Income ($):</label>
-                    <input type="number" id="income" step="0.01" min="0" placeholder="e.g., 3000" class="focus:ring-blue-500 focus:border-blue-500">
+    <!-- Main Content Area -->
+    <main class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8">
+
+        <!-- Current Month Budgeting -->
+        <section class="card p-6 md:p-8 space-y-6">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Budget for <span id="currentMonthDisplay"></span></h2>
+
+            <!-- Month and Year Select -->
+            <div class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-1">
+                    <label for="monthSelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Month:</label>
+                    <select id="monthSelect" class="w-full p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
                 </div>
-
-                <div id="expense-inputs" class="space-y-3">
-                    <label class="block text-gray-700 text-sm font-medium mb-1">Expense Categories:</label>
-                    <!-- Initial expense input -->
-                    <div class="flex items-center space-x-2 expense-item">
-                        <input type="text" placeholder="Category Name" class="expense-category w-2/5">
-                        <div class="flex items-center w-3/5 border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-blue-200 focus-within:border-blue-500">
-                            <input type="number" step="0.01" min="0" placeholder="Amount" class="expense-amount flex-grow p-2 focus:outline-none border-none bg-transparent">
-
-                            <!-- New wrapper for the custom unit display and hidden select -->
-                            <div class="relative flex items-center bg-blue-200 border-l border-blue-300 rounded-r-md w-24">
-                                <span class="expense-unit-display px-3 py-2 text-blue-800 font-medium"></span>
-                                <div class="w-8 h-full flex items-center justify-center bg-blue-300 rounded-r-md border-l border-blue-400">
-                                    <!-- SVG Arrow -->
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </div>
-                                <!-- Actual select element, positioned absolutely over the visual elements -->
-                                <select class="expense-unit absolute inset-0 opacity-0 cursor-pointer">
-                                    <option value="dollar">$</option>
-                                    <option value="percent">%</option>
-                                </select>
-                            </div>
-                        </div>
-                        <button type="button" class="remove-expense-btn bg-red-500 hover:bg-red-600 text-white p-2 rounded-full w-8 h-8 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
-                            </svg>
-                        </button>
-                    </div>
+                <div class="flex-1">
+                    <label for="yearSelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Year:</label>
+                    <select id="yearSelect" class="w-full p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
                 </div>
-                <button type="button" id="add-expense" class="bg-green-500 hover:bg-green-600 text-white w-full py-2 rounded-md font-medium flex items-center justify-center space-x-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    <span>Add Expense Category</span>
-                </button>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700">Save Budget</button>
-            </form>
-        </div>
+            </div>
 
-        <!-- Budget Summary Section -->
-        <div class="card grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Income Input -->
             <div>
-                <h2 class="text-xl font-semibold mb-3 text-gray-800">Current Budget Overview</h2>
-                <div class="space-y-2">
-                    <p class="flex justify-between items-center text-gray-700">
-                        <span class="font-medium">Total Income:</span>
-                        <span id="display-income" class="font-bold text-lg text-blue-600">$0.00</span>
-                    </p>
-                    <p class="flex justify-between items-center text-gray-700">
-                        <span class="font-medium">Total Allocated Expenses:</span>
-                        <span id="display-allocated-expenses" class="font-bold text-lg text-red-500">$0.00</span>
-                    </p>
-                    <p class="flex justify-between items-center text-gray-700">
-                        <span class="font-medium">Remaining Budget:</span>
-                        <span id="display-remaining-budget" class="font-bold text-lg text-green-500">$0.00</span>
-                    </p>
-                </div>
-                <div class="mt-4">
-                    <h3 class="text-lg font-semibold mb-2 text-gray-800">Allocated Expenses:</h3>
-                    <ul id="allocated-expenses-list" class="space-y-1 text-gray-600">
-                        <!-- Allocated expenses will be listed here -->
-                        <li class="text-center text-gray-500">No expenses allocated yet.</li>
-                    </ul>
-                </div>
+                <label for="incomeInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Monthly Income:</label>
+                <input type="number" id="incomeInput" placeholder="Enter income" class="w-full p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
+
+            <!-- Expense Categories -->
+            <div id="expensesContainer" class="space-y-4">
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Expenses:</h3>
+                <!-- Dynamic expense inputs will be added here by JS -->
+            </div>
+            <button id="addExpenseBtn" class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">Add Expense</button>
+
+            <!-- Budget Summary -->
+            <div class="border-t pt-4 mt-4 border-gray-200 dark:border-gray-600">
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Summary:</h3>
+                <p class="text-gray-700 dark:text-gray-300">Total Expenses: <span id="totalExpenses" class="font-medium">$0.00</span></p>
+                <p class="text-gray-700 dark:text-gray-300">Remaining Balance: <span id="remainingBalance" class="font-medium">$0.00</span></p>
+            </div>
+
+            <button id="saveBudgetBtn" class="w-full bg-green-500 text-white py-3 px-4 rounded-md text-lg font-semibold hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500">Save Monthly Budget</button>
+        </section>
+
+        <!-- Spending History & Previous Months -->
+        <section class="card p-6 md:p-8 space-y-6">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Spending History</h2>
+
+            <!-- Chart Canvas -->
+            <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-md">
+                <canvas id="spendingChart"></canvas>
+            </div>
+
+            <!-- Select Month for Details/Edit -->
             <div>
-                <h2 class="text-xl font-semibold mb-3 text-gray-800">Record Monthly Spending</h2>
-                <form id="record-spending-form" class="space-y-4">
-                    <div>
-                        <label for="month-spent" class="block text-gray-700 text-sm font-medium mb-1">Month to Record Spending For:</label>
-                        <input type="month" id="month-spent" class="focus:ring-blue-500 focus:border-blue-500">
-                    </div>
-
-                    <div id="actual-expense-inputs" class="space-y-3 hidden">
-                        <label class="block text-gray-700 text-sm font-medium mb-1">Actual Spending by Category:</label>
-                        <!-- Dynamic actual expense inputs will go here -->
-                        <p class="text-center text-gray-500" id="no-categories-message">No categories loaded. Select a month or add manually.</p>
-                    </div>
-                    <button type="button" id="add-actual-expense" class="bg-gray-500 hover:bg-gray-600 text-white w-full py-2 rounded-md font-medium flex items-center justify-center space-x-2 hidden">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        <span>Add Actual Expense Category</span>
-                    </button>
-                    <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700">Record Spending</button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Category Spending History Section -->
-        <div class="card">
-            <h2 class="text-xl font-semibold mb-4 text-gray-800">Category Spending History</h2>
-            <div class="flex items-center space-x-2 mb-4">
-                <label for="category-filter" class="block text-gray-700 text-sm font-medium">Select Category:</label>
-                <select id="category-filter" class="flex-grow p-2 rounded-md border border-gray-300 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">All Categories</option>
-                </select>
-            </div>
-            <ul id="category-spending-details" class="space-y-2 text-gray-600">
-                <li class="text-center text-gray-500">Select a category to see its spending history.</li>
-            </ul>
-        </div>
-
-
-        <!-- Spending History Chart Section -->
-        <div class="card">
-            <h2 class="text-xl font-semibold mb-4 text-gray-800"><span id="chart-title-prefix">Total</span> Monthly Spending History</h2>
-            <div class="relative h-96">
-                <canvas id="spending-chart"></canvas>
-            </div>
-        </div>
-
-        <!-- AI-Powered Budgeting Insights Section (Moved to bottom) -->
-        <div class="card">
-            <h2 class="text-xl font-semibold mb-4 text-gray-800">AI-Powered Budgeting Insights ✨</h2>
-            <div class="mb-4">
-                <button type="button" id="get-budget-tips-btn" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white py-2 rounded-md font-medium flex items-center justify-center space-x-2">
-                    <span>Get Budgeting Tips ✨</span>
-                </button>
+                <label for="historyMonthSelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">View/Edit Previous Month:</label>
+                <select id="historyMonthSelect" class="w-full p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
             </div>
 
-            <div id="loading-spinner" class="hidden flex justify-center items-center py-4">
-                <div class="animate-spin-custom rounded-full h-12 w-12 border-4 border-t-4 border-blue-500 border-opacity-75"></div>
-                <p class="ml-4 text-blue-700 font-medium">Generating tips...</p>
+            <!-- Selected Month Details/Edit Area -->
+            <div id="selectedMonthDetails" class="space-y-4 border-t pt-4 mt-4 border-gray-200 dark:border-gray-600 hidden">
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Details for <span id="detailsMonthDisplay"></span>:</h3>
+                <p class="text-gray-700 dark:text-gray-300">Income: <span id="detailsIncome" class="font-medium">$0.00</span></p>
+                <h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Expenses:</h4>
+                <div id="detailsExpensesContainer" class="space-y-3">
+                    <!-- Expenses for selected month will be loaded here -->
+                </div>
+                <button id="addHistoryExpenseBtn" class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">Add New Expense for this Month</button>
+                <button id="saveHistoryBudgetBtn" class="w-full bg-purple-500 text-white py-3 px-4 rounded-md text-lg font-semibold hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500">Save Changes for this Month</button>
             </div>
-
-            <div id="budget-tips-output" class="min-h-[100px] p-4 bg-gray-50 border border-gray-200 rounded-md text-gray-700 leading-relaxed whitespace-pre-wrap">
-                Tips will appear here after clicking the button.
-            </div>
-            <p id="tips-error-message" class="text-red-600 mt-2 hidden">An error occurred while fetching tips. Please try again.</p>
-        </div>
+        </section>
     </main>
 
-    <footer class="bg-gray-800 text-white p-4 text-center text-sm mt-6">
-        <p>&copy; 2024 Smart Budgeting App. All rights reserved.</p>
-    </footer>
+    <script>
+        // Global variables for Chart.js instance
+        let spendingChart = null;
 
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-        // Firebase configuration and initialization
-        // __firebase_config is a global variable provided by the environment
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-
-        let userId = null; // Store the user ID
-        let allSpendingHistory = []; // Cache all spending history for category filtering
-
-        // Function to safely get app ID
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-        // Chart.js instance
-        let spendingChart;
-
-        // Function to initialize Chart.js
-        const initChart = (labels = [], data = [], chartLabel = 'Total Actual Spending ($)') => {
-            const ctx = document.getElementById('spending-chart').getContext('2d');
-            if (spendingChart) {
-                spendingChart.destroy(); // Destroy existing chart before creating a new one
+        // Function to get the currently selected month and year from the dropdowns
+        function getSelectedMonthKey() {
+            const year = document.getElementById('yearSelect').value;
+            const month = document.getElementById('monthSelect').value;
+            if (year && month) {
+                return `${year}-${month}`;
             }
-            spendingChart = new Chart(ctx, {
-                type: 'line', // Line chart for history
+            return ''; // Return empty if not fully selected
+        }
+
+        // Function to display current month
+        function displayCurrentMonthName() {
+            const year = document.getElementById('yearSelect').value;
+            const monthNum = parseInt(document.getElementById('monthSelect').value);
+            if (year && !isNaN(monthNum)) {
+                const date = new Date(year, monthNum - 1, 1);
+                const options = { year: 'numeric', month: 'long' };
+                document.getElementById('currentMonthDisplay').textContent = date.toLocaleDateString('en-US', options);
+            } else {
+                document.getElementById('currentMonthDisplay').textContent = 'Select Month';
+            }
+        }
+
+        // Function to load budgets from local storage
+        function loadBudgets() {
+            const budgetsJSON = localStorage.getItem('budgets');
+            return budgetsJSON ? JSON.parse(budgetsJSON) : {};
+        }
+
+        // Function to save budgets to local storage
+        function saveBudgets(budgets) {
+            localStorage.setItem('budgets', JSON.stringify(budgets));
+        }
+
+        // Initialize budgets data
+        let budgets = loadBudgets();
+
+        // Helper function to format currency
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+        }
+
+        // --- Dark Mode Logic ---
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        function enableDarkMode() {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+            updateChartTheme(); // Update chart colors
+        }
+        function disableDarkMode() {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+            updateChartTheme(); // Update chart colors
+        }
+
+        // Check for saved theme preference or system preference
+        const prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const savedTheme = localStorage.getItem('theme');
+
+        if (savedTheme === 'dark' || (!savedTheme && prefersDarkMode)) {
+            enableDarkMode();
+            darkModeToggle.checked = true;
+        } else {
+            disableDarkMode();
+            darkModeToggle.checked = false;
+        }
+
+        darkModeToggle.addEventListener('change', () => {
+            if (darkModeToggle.checked) {
+                enableDarkMode();
+            } else {
+                disableDarkMode();
+            }
+        });
+
+        // --- Current Month Budgeting Logic ---
+        const monthSelect = document.getElementById('monthSelect');
+        const yearSelect = document.getElementById('yearSelect');
+        const incomeInput = document.getElementById('incomeInput');
+        const expensesContainer = document.getElementById('expensesContainer');
+        const addExpenseBtn = document.getElementById('addExpenseBtn');
+        const saveBudgetBtn = document.getElementById('saveBudgetBtn');
+        const totalExpensesSpan = document.getElementById('totalExpenses');
+        const remainingBalanceSpan = document.getElementById('remainingBalance');
+
+        // Stores expense input elements for current month dynamically
+        let currentMonthExpenses = [];
+
+        function populateMonthYearDropdowns() {
+            const now = new Date();
+            const currentMonth = now.getMonth() + 1; // 1-indexed
+            const currentYear = now.getFullYear();
+
+            // Populate months
+            monthSelect.innerHTML = '';
+            for (let i = 0; i < 12; i++) {
+                const monthDate = new Date(currentYear, i, 1);
+                const option = document.createElement('option');
+                option.value = (i + 1).toString().padStart(2, '0');
+                option.textContent = monthDate.toLocaleDateString('en-US', { month: 'long' });
+                monthSelect.appendChild(option);
+            }
+            monthSelect.value = currentMonth.toString().padStart(2, '0'); // Set default to current month
+
+            // Populate years (e.g., current year +/- 5 years)
+            yearSelect.innerHTML = '';
+            for (let i = currentYear - 5; i <= currentYear + 5; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                yearSelect.appendChild(option);
+            }
+            yearSelect.value = currentYear; // Set default to current year
+
+            // Add event listeners to update budget when month/year changes
+            monthSelect.addEventListener('change', loadCurrentMonthBudget);
+            yearSelect.addEventListener('change', loadCurrentMonthBudget);
+        }
+
+
+        function addExpenseInput(expense = { name: '', amount: '', type: 'value' }, isInitialLoad = false) {
+            const expenseDiv = document.createElement('div');
+            expenseDiv.className = 'flex flex-col sm:flex-row gap-2 items-end sm:items-center';
+
+            const expenseIndex = currentMonthExpenses.length;
+            currentMonthExpenses.push(expenseDiv); // Add to tracking array
+
+            expenseDiv.innerHTML = `
+                <input type="text" placeholder="Expense Name" value="${expense.name}" class="expense-name flex-1 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="number" placeholder="Amount" value="${expense.amount}" step="0.01" class="expense-amount w-24 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select class="expense-type p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="value" ${expense.type === 'value' ? 'selected' : ''}>$</option>
+                    <option value="percentage" ${expense.type === 'percentage' ? 'selected' : ''}>%</option>
+                </select>
+                <button class="remove-expense-btn bg-red-500 text-white p-2 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 remove-btn-symbol">&times;</button>
+            `;
+            expensesContainer.appendChild(expenseDiv);
+
+            // Add event listeners
+            expenseDiv.querySelector('.expense-name').addEventListener('input', calculateSummary);
+            expenseDiv.querySelector('.expense-amount').addEventListener('input', calculateSummary);
+            expenseDiv.querySelector('.expense-type').addEventListener('change', calculateSummary);
+            expenseDiv.querySelector('.remove-expense-btn').addEventListener('click', () => {
+                expensesContainer.removeChild(expenseDiv);
+                currentMonthExpenses = currentMonthExpenses.filter(item => item !== expenseDiv); // Remove from tracking array
+                calculateSummary();
+            });
+
+            if (!isInitialLoad) {
+                calculateSummary(); // Recalculate summary after adding a new empty expense
+            }
+        }
+
+        addExpenseBtn.addEventListener('click', () => addExpenseInput());
+        incomeInput.addEventListener('input', calculateSummary);
+
+        function calculateSummary() {
+            const income = parseFloat(incomeInput.value) || 0;
+            let totalExpenses = 0;
+
+            currentMonthExpenses.forEach(expenseDiv => {
+                const amountInput = expenseDiv.querySelector('.expense-amount');
+                const typeSelect = expenseDiv.querySelector('.expense-type');
+
+                let amount = parseFloat(amountInput.value) || 0;
+                const type = typeSelect.value;
+
+                if (type === 'percentage') {
+                    totalExpenses += (income * (amount / 100));
+                } else {
+                    totalExpenses += amount;
+                }
+            });
+
+            const remainingBalance = income - totalExpenses;
+
+            totalExpensesSpan.textContent = formatCurrency(totalExpenses);
+            remainingBalanceSpan.textContent = formatCurrency(remainingBalance);
+
+            // Apply color to remaining balance based on value
+            if (remainingBalance < 0) {
+                remainingBalanceSpan.classList.remove('text-green-600');
+                remainingBalanceSpan.classList.add('text-red-600');
+            } else {
+                remainingBalanceSpan.classList.remove('text-red-600');
+                remainingBalanceSpan.classList.add('text-green-600');
+            }
+        }
+
+        function loadCurrentMonthBudget() {
+            const currentMonthKey = getSelectedMonthKey();
+            displayCurrentMonthName(); // Update display immediately when month/year changes
+            const currentBudget = budgets[currentMonthKey];
+
+            // Clear previous inputs
+            expensesContainer.innerHTML = '';
+            currentMonthExpenses = [];
+
+            if (currentBudget) {
+                incomeInput.value = currentBudget.income;
+                currentBudget.expenses.forEach(expense => addExpenseInput(expense, true));
+            } else {
+                incomeInput.value = '';
+                addExpenseInput(); // Add one default expense input if no budget exists
+            }
+            calculateSummary();
+        }
+
+        saveBudgetBtn.addEventListener('click', () => {
+            const currentMonthKey = getSelectedMonthKey();
+            if (!currentMonthKey) {
+                alertUser('Please select a month and year before saving.', 'red');
+                return;
+            }
+            const income = parseFloat(incomeInput.value) || 0;
+            const expenses = [];
+
+            currentMonthExpenses.forEach(expenseDiv => {
+                const nameInput = expenseDiv.querySelector('.expense-name');
+                const amountInput = expenseDiv.querySelector('.expense-amount');
+                const typeSelect = expenseDiv.querySelector('.expense-type');
+
+                const name = nameInput.value.trim();
+                const amount = parseFloat(amountInput.value) || 0;
+                const type = typeSelect.value;
+
+                if (name && (amount > 0 || type === 'percentage')) { // Only save valid expenses
+                    expenses.push({ name, amount, type });
+                }
+            });
+
+            // Calculate total expenses and balance for saving
+            let totalExpenses = 0;
+            expenses.forEach(expense => {
+                if (expense.type === 'percentage') {
+                    totalExpenses += (income * (expense.amount / 100));
+                } else {
+                    totalExpenses += expense.amount;
+                }
+            });
+            const balance = income - totalExpenses;
+
+            budgets[currentMonthKey] = {
+                income: income,
+                expenses: expenses,
+                totalExpenses: totalExpenses,
+                balance: balance
+            };
+
+            saveBudgets(budgets);
+            alertUser('Budget saved successfully!', 'green');
+            updateSpendingChart(); // Update chart after saving current month
+            populateHistoryDropdown(); // Update dropdown with new month if it's the first time
+        });
+
+        // --- Spending History & Previous Months Logic ---
+        const historyMonthSelect = document.getElementById('historyMonthSelect');
+        const selectedMonthDetails = document.getElementById('selectedMonthDetails');
+        const detailsMonthDisplay = document.getElementById('detailsMonthDisplay');
+        const detailsIncome = document.getElementById('detailsIncome');
+        const detailsExpensesContainer = document.getElementById('detailsExpensesContainer');
+        const addHistoryExpenseBtn = document.getElementById('addHistoryExpenseBtn');
+        const saveHistoryBudgetBtn = document.getElementById('saveHistoryBudgetBtn');
+
+        let historyMonthExpenses = []; // To track expense inputs in the history section
+
+        function populateHistoryDropdown() {
+            historyMonthSelect.innerHTML = ''; // Clear existing options
+            const monthKeys = Object.keys(budgets).sort().reverse(); // Sort descending for most recent first
+
+            if (monthKeys.length === 0) {
+                historyMonthSelect.innerHTML = '<option value="">No historical data</option>';
+                selectedMonthDetails.classList.add('hidden');
+                return;
+            }
+
+            monthKeys.forEach(key => {
+                const option = document.createElement('option');
+                option.value = key;
+                const [year, month] = key.split('-');
+                const date = new Date(year, parseInt(month) - 1, 1); // Month is 0-indexed
+                option.textContent = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+                historyMonthSelect.appendChild(option);
+            });
+
+            // Automatically select the first (most recent) month and display its details
+            if (monthKeys.length > 0) {
+                historyMonthSelect.value = monthKeys[0];
+                displaySelectedMonthDetails();
+            }
+        }
+
+        historyMonthSelect.addEventListener('change', displaySelectedMonthDetails);
+
+        function displaySelectedMonthDetails() {
+            const selectedKey = historyMonthSelect.value;
+            const budgetData = budgets[selectedKey];
+
+            if (!budgetData) {
+                selectedMonthDetails.classList.add('hidden');
+                return;
+            }
+
+            selectedMonthDetails.classList.remove('hidden');
+            const [year, month] = selectedKey.split('-');
+            const date = new Date(year, parseInt(month) - 1, 1);
+            detailsMonthDisplay.textContent = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+            detailsIncome.textContent = formatCurrency(budgetData.income);
+
+            // Clear previous history expense inputs
+            detailsExpensesContainer.innerHTML = '';
+            historyMonthExpenses = [];
+
+            // Populate expense inputs for the selected month
+            budgetData.expenses.forEach(expense => addHistoryExpenseInput(expense));
+
+            // Attach event listeners for calculating summary on history inputs (for current view, not saving yet)
+            detailsExpensesContainer.querySelectorAll('.history-expense-name, .history-expense-amount, .history-expense-type').forEach(input => {
+                input.addEventListener('input', calculateHistorySummary);
+                input.addEventListener('change', calculateHistorySummary); // For select change
+            });
+            calculateHistorySummary(); // Initial calculation for history view
+        }
+
+        function addHistoryExpenseInput(expense = { name: '', amount: '', type: 'value' }) {
+            const expenseDiv = document.createElement('div');
+            expenseDiv.className = 'flex flex-col sm:flex-row gap-2 items-end sm:items-center';
+
+            const expenseIndex = historyMonthExpenses.length;
+            historyMonthExpenses.push(expenseDiv); // Add to tracking array
+
+            expenseDiv.innerHTML = `
+                <input type="text" placeholder="Expense Name" value="${expense.name}" class="history-expense-name flex-1 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <input type="number" placeholder="Amount" value="${expense.amount}" step="0.01" class="history-expense-amount w-24 p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <select class="history-expense-type p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <option value="value" ${expense.type === 'value' ? 'selected' : ''}>$</option>
+                    <option value="percentage" ${expense.type === 'percentage' ? 'selected' : ''}>%</option>
+                </select>
+                <button class="remove-history-expense-btn bg-red-500 text-white p-2 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 remove-btn-symbol">&times;</button>
+            `;
+            detailsExpensesContainer.appendChild(expenseDiv);
+
+            // Add event listeners for this specific input row
+            expenseDiv.querySelector('.history-expense-name').addEventListener('input', calculateHistorySummary);
+            expenseDiv.querySelector('.history-expense-amount').addEventListener('input', calculateHistorySummary);
+            expenseDiv.querySelector('.history-expense-type').addEventListener('change', calculateHistorySummary);
+            expenseDiv.querySelector('.remove-history-expense-btn').addEventListener('click', () => {
+                detailsExpensesContainer.removeChild(expenseDiv);
+                historyMonthExpenses = historyMonthExpenses.filter(item => item !== expenseDiv); // Remove from tracking
+                calculateHistorySummary();
+            });
+        }
+
+        addHistoryExpenseBtn.addEventListener('click', () => addHistoryExpenseInput());
+
+        function calculateHistorySummary() {
+            // This function is for display purposes in the history editing section.
+            // It recalculates the summary based on the *currently edited* values,
+            // but doesn't update the main total expenses/balance spans.
+            const selectedKey = historyMonthSelect.value;
+            const currentMonthBudget = budgets[selectedKey] || { income: 0, expenses: [] };
+
+            const income = currentMonthBudget.income || 0; // Income is taken from the saved budget for that month
+
+            let totalExpenses = 0;
+            historyMonthExpenses.forEach(expenseDiv => {
+                const amountInput = expenseDiv.querySelector('.history-expense-amount');
+                const typeSelect = expenseDiv.querySelector('.history-expense-type');
+
+                let amount = parseFloat(amountInput.value) || 0;
+                const type = typeSelect.value;
+
+                if (type === 'percentage') {
+                    totalExpenses += (income * (amount / 100));
+                } else {
+                    totalExpenses += amount;
+                }
+            });
+
+            // If you want to display an updated summary *within* the history details section:
+            // You would need to add new <p> elements for "Total Expenses" and "Remaining Balance"
+            // specifically for the history view, similar to the current month's summary.
+            // For now, this calculation happens to prepare data for `saveHistoryBudgetBtn`.
+        }
+
+        saveHistoryBudgetBtn.addEventListener('click', () => {
+            const selectedKey = historyMonthSelect.value;
+            if (!selectedKey) {
+                alertUser('Please select a month to save changes.', 'red');
+                return;
+            }
+
+            const currentBudgetForMonth = budgets[selectedKey] || { income: 0 };
+            const income = currentBudgetForMonth.income; // Income is taken from the saved budget for that month
+
+            const updatedExpenses = [];
+            historyMonthExpenses.forEach(expenseDiv => {
+                const nameInput = expenseDiv.querySelector('.history-expense-name');
+                const amountInput = expenseDiv.querySelector('.history-expense-amount');
+                const typeSelect = expenseDiv.querySelector('.history-expense-type');
+
+                const name = nameInput.value.trim();
+                const amount = parseFloat(amountInput.value) || 0;
+                const type = typeSelect.value;
+
+                if (name && (amount > 0 || type === 'percentage')) { // Only save valid expenses
+                    updatedExpenses.push({ name, amount, type });
+                }
+            });
+
+            // Recalculate total expenses and balance based on updated expenses
+            let totalExpenses = 0;
+            updatedExpenses.forEach(expense => {
+                if (expense.type === 'percentage') {
+                    totalExpenses += (income * (expense.amount / 100));
+                } else {
+                    totalExpenses += expense.amount;
+                }
+            });
+            const balance = income - totalExpenses;
+
+            budgets[selectedKey] = {
+                income: income,
+                expenses: updatedExpenses,
+                totalExpenses: totalExpenses,
+                balance: balance
+            };
+
+            saveBudgets(budgets);
+            alertUser(`Changes for ${selectedKey} saved successfully!`, 'green');
+            updateSpendingChart(); // Update chart after saving history changes
+            displaySelectedMonthDetails(); // Re-display with updated data
+        });
+
+        // --- Chart.js Logic ---
+        const ctx = document.getElementById('spendingChart').getContext('2d');
+
+        function updateSpendingChart() {
+            const labels = [];
+            const incomeData = [];
+            const expensesData = [];
+            const balanceData = [];
+
+            // Sort budget keys chronologically
+            const sortedKeys = Object.keys(budgets).sort();
+
+            sortedKeys.forEach(key => {
+                const budget = budgets[key];
+                const [year, month] = key.split('-');
+                const date = new Date(year, parseInt(month) - 1, 1);
+                labels.push(date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
+                incomeData.push(budget.income);
+                expensesData.push(budget.totalExpenses);
+                balanceData.push(budget.balance);
+            });
+
+            const currentTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            const textColor = currentTheme === 'dark' ? '#e2e8f0' : '#1f2937'; // Light text for dark, dark for light
+            const gridColor = currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'; // Lighter grid for dark
+
+            const chartConfig = {
+                type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: chartLabel, // Dynamic label
-                        data: data,
-                        borderColor: 'rgb(75, 192, 192)',
-                        tension: 0.1,
-                        fill: false, // Don't fill the area under the line
-                        pointBackgroundColor: 'rgb(75, 192, 192)',
-                        pointBorderColor: '#fff',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: 'rgb(75, 192, 192)'
-                    }]
+                    datasets: [
+                        {
+                            label: 'Income',
+                            data: incomeData,
+                            borderColor: '#3b82f6', // Blue-500
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                            tension: 0.3,
+                            fill: false
+                        },
+                        {
+                            label: 'Total Expenses',
+                            data: expensesData,
+                            borderColor: '#ef4444', // Red-500
+                            backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                            tension: 0.3,
+                            fill: false
+                        },
+                        {
+                            label: 'Remaining Balance',
+                            data: balanceData,
+                            borderColor: '#22c55e', // Green-500
+                            backgroundColor: 'rgba(34, 197, 94, 0.2)',
+                            tension: 0.3,
+                            fill: false
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false, // Allow chart to fill container
+                    maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            display: true,
-                            position: 'top',
-                        },
-                        title: {
-                            display: true,
-                            text: chartLabel.replace(' ($)', '') + ' History' // Adjust title for clarity
+                            labels: {
+                                color: textColor // Legend text color
+                            }
                         }
                     },
                     scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Amount ($)'
+                        x: {
+                            ticks: {
+                                color: textColor // X-axis label color
+                            },
+                            grid: {
+                                color: gridColor // X-axis grid line color
                             }
                         },
-                        x: {
-                            title: {
-                                display: true,
-                                text: 'Month'
+                        y: {
+                            ticks: {
+                                color: textColor, // Y-axis label color
+                                callback: function(value) {
+                                    return formatCurrency(value); // Format Y-axis labels as currency
+                                }
+                            },
+                            grid: {
+                                color: gridColor // Y-axis grid line color
                             }
                         }
                     }
                 }
-            });
-        };
+            };
 
-        // Initialize chart with empty data on load
-        initChart();
-
-        // --- Authentication and Data Initialization ---
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                // User is signed in.
-                userId = user.uid;
-                document.getElementById('user-id').textContent = userId;
-                console.log("User signed in:", userId);
-
-                // Load existing budget and spending data
-                loadBudgetAndSpending();
-                setupSpendingHistoryListener(); // Listener for total actual spending and category filter
+            if (spendingChart) {
+                spendingChart.data = chartConfig.data;
+                spendingChart.options = chartConfig.options;
+                spendingChart.update();
             } else {
-                // User is signed out.
-                console.log("No user signed in. Attempting sign-in...");
-                document.getElementById('user-id').textContent = 'Authenticating...';
-                try {
-                    // Use __initial_auth_token if available, otherwise sign in anonymously
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                    console.log("Authentication successful.");
-                } catch (error) {
-                    console.error("Authentication failed:", error);
-                    document.getElementById('user-id').textContent = 'Failed to authenticate.';
-                }
-            }
-        });
-
-        // --- Firestore Data Operations ---
-
-        // Function to load existing budget data (for current setup)
-        const loadBudgetAndSpending = async () => {
-            if (!userId) {
-                console.warn("User ID not available yet for loading data.");
-                return;
-            }
-            try {
-                // Get current budget document
-                const budgetRef = doc(db, `/artifacts/${appId}/users/${userId}/currentBudget`, 'currentBudget');
-                const budgetSnap = await getDoc(budgetRef);
-
-                if (budgetSnap.exists()) {
-                    const data = budgetSnap.data();
-                    document.getElementById('income').value = data.income || '';
-                    displayBudgetSummary(data.income || 0, data.expenses || {});
-
-                    // Dynamically populate expense inputs for the setup form
-                    const expenseInputsDiv = document.getElementById('expense-inputs');
-                    expenseInputsDiv.innerHTML = '<label class="block text-gray-700 text-sm font-medium mb-1">Expense Categories:</label>'; // Clear existing
-                    const expenseEntries = Object.entries(data.expenses || {});
-                    if (expenseEntries.length > 0) {
-                        expenseEntries.forEach(([category, amount]) => {
-                            // Assuming all loaded amounts are in dollars for display
-                            addExpenseInput(category, amount, 'dollar');
-                        });
-                    } else {
-                        addExpenseInput('', 0, 'dollar'); // Add one empty expense input if none exist
-                    }
-                } else {
-                    console.log("No current budget found for this user.");
-                    displayBudgetSummary(0, {}); // Clear display if no budget
-                    // Ensure at least one empty expense input is present if no budget exists
-                    const expenseInputsDiv = document.getElementById('expense-inputs');
-                    expenseInputsDiv.innerHTML = '<label class="block text-gray-700 text-sm font-medium mb-1">Expense Categories:</label>';
-                    addExpenseInput('', 0, 'dollar');
-                }
-            } catch (error) {
-                console.error("Error loading budget data:", error);
-            }
-        };
-
-
-        // Function to save current budget setup
-        const saveBudget = async (income, expenses) => {
-            if (!userId) {
-                console.error("Cannot save budget: User ID not available.");
-                return;
-            }
-            try {
-                const budgetRef = doc(db, `/artifacts/${appId}/users/${userId}/currentBudget`, 'currentBudget');
-                await setDoc(budgetRef, {
-                    income: income,
-                    expenses: expenses,
-                    timestamp: serverTimestamp() // Add a timestamp
-                }, { merge: true }); // Use merge to avoid overwriting other fields if they exist
-                console.log("Current budget setup saved successfully!");
-                displayBudgetSummary(income, expenses); // Update display
-            } catch (error) {
-                console.error("Error saving current budget:", error);
-                // Optionally display an error message to the user
-            }
-        };
-
-        // Function to record monthly spending and save budget snapshot
-        const recordSpending = async (month, actualExpenses) => {
-            if (!userId) {
-                console.error("Cannot record spending: User ID not available.");
-                return;
-            }
-            try {
-                // 1. Save the current allocated budget as a historical snapshot for this month
-                const currentIncome = parseFloat(document.getElementById('income').value) || 0;
-                const currentAllocatedExpenses = {};
-                document.querySelectorAll('#expense-inputs .expense-item').forEach((expenseItemDiv) => {
-                    const categoryInput = expenseItemDiv.querySelector('.expense-category');
-                    const amountInput = expenseItemDiv.querySelector('.expense-amount');
-                    const unitSelect = expenseItemDiv.querySelector('.expense-unit');
-
-                    const categoryName = categoryInput.value.trim();
-                    let amount = parseFloat(amountInput.value) || 0;
-                    const unit = unitSelect.value;
-
-                    if (categoryName) {
-                        if (unit === 'percent') {
-                            amount = (currentIncome * amount) / 100;
-                        }
-                        currentAllocatedExpenses[categoryName] = amount;
-                    }
-                });
-
-                const historicalBudgetRef = doc(db, `/artifacts/${appId}/users/${userId}/historicalBudgets`, month);
-                await setDoc(historicalBudgetRef, {
-                    income: currentIncome,
-                    expenses: currentAllocatedExpenses,
-                    timestamp: serverTimestamp()
-                }, { merge: true });
-                console.log("Historical allocated budget saved successfully for", month);
-
-
-                // 2. Save the actual spending for this month
-                const spendingHistoryRef = doc(db, `/artifacts/${appId}/users/${userId}/spendingHistory`, month);
-                await setDoc(spendingHistoryRef, {
-                    month: month,
-                    actualExpenses: actualExpenses,
-                    timestamp: serverTimestamp()
-                }, { merge: true });
-                console.log("Actual spending recorded successfully for", month);
-
-                // 3. Reset the current budget input fields and summary display
-                document.getElementById('income').value = ''; // Clear income
-                const expenseInputsDiv = document.getElementById('expense-inputs');
-                expenseInputsDiv.innerHTML = '<label class="block text-gray-700 text-sm font-medium mb-1">Expense Categories:</label>';
-                addExpenseInput('', 0, 'dollar'); // Add one empty expense input
-                displayBudgetSummary(0, {}); // Reset summary display
-
-                // Clear record spending form and hide actual expense inputs
-                document.getElementById('month-spent').value = '';
-                document.getElementById('actual-expense-inputs').innerHTML = '<label class="block text-gray-700 text-sm font-medium mb-1">Actual Spending by Category:</label><p class="text-center text-gray-500" id="no-categories-message">Select a month to load categories or add manually.</p>';
-                document.getElementById('actual-expense-inputs').classList.add('hidden');
-                document.getElementById('add-actual-expense').classList.add('hidden');
-
-            } catch (error) {
-                console.error("Error recording spending and saving historical budget:", error);
-                // Optionally display an error message to the user
-            }
-        };
-
-        // Function to set up real-time listener for spending history
-        const setupSpendingHistoryListener = () => {
-            if (!userId) {
-                console.warn("User ID not available yet for setting up spending listener.");
-                return;
-            }
-            const spendingCollectionRef = collection(db, `/artifacts/${appId}/users/${userId}/spendingHistory`);
-            const historicalBudgetsCollectionRef = collection(db, `/artifacts/${appId}/users/${userId}/historicalBudgets`);
-
-            // Listen to spending history
-            onSnapshot(spendingCollectionRef, (snapshot) => {
-                allSpendingHistory = [];
-                let uniqueCategories = new Set();
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    allSpendingHistory.push(data);
-                    if (data.actualExpenses) {
-                        Object.keys(data.actualExpenses).forEach(cat => uniqueCategories.add(cat));
-                    }
-                });
-
-                // Sort data by month (string format 'YYYY-MM') for chronological order
-                allSpendingHistory.sort((a, b) => {
-                    if (a.month < b.month) return -1;
-                    if (a.month > b.month) return 1;
-                    return 0;
-                });
-
-                // Update total monthly spending chart initially
-                updateTotalSpendingChart();
-
-
-                // Populate category filter dropdown
-                const categoryFilterSelect = document.getElementById('category-filter');
-                categoryFilterSelect.innerHTML = '<option value="">All Categories</option>'; // Reset
-                uniqueCategories.forEach(category => {
-                    const option = document.createElement('option');
-                    option.value = category;
-                    option.textContent = category;
-                    categoryFilterSelect.appendChild(option);
-                });
-
-                // If a category is already selected, re-display its history
-                if (categoryFilterSelect.value) {
-                    displayCategorySpendingHistory(categoryFilterSelect.value);
-                } else {
-                    document.getElementById('category-spending-details').innerHTML = '<li class="text-center text-gray-500">Select a category to see its spending history.</li>';
-                }
-
-            }, (error) => {
-                console.error("Error fetching spending history for chart:", error);
-            });
-
-            // Listen to historical budgets to populate category filter with allocated categories too
-            onSnapshot(historicalBudgetsCollectionRef, (snapshot) => {
-                const categoryFilterSelect = document.getElementById('category-filter');
-                let existingCategories = new Set(Array.from(categoryFilterSelect.options).map(opt => opt.value).filter(val => val !== ""));
-
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    if (data.expenses) {
-                        Object.keys(data.expenses).forEach(cat => {
-                            if (!existingCategories.has(cat)) {
-                                existingCategories.add(cat);
-                                const option = document.createElement('option');
-                                option.value = cat;
-                                option.textContent = cat;
-                                categoryFilterSelect.appendChild(option);
-                            }
-                        });
-                    }
-                });
-            }, (error) => {
-                console.error("Error fetching historical budgets for category filter:", error);
-            });
-        };
-
-        // Function to update the chart with total spending
-        const updateTotalSpendingChart = () => {
-            const labels = allSpendingHistory.map(d => d.month);
-            const data = allSpendingHistory.map(d => {
-                let totalMonthSpending = 0;
-                if (d.actualExpenses) {
-                    for (const category in d.actualExpenses) {
-                        totalMonthSpending += parseFloat(d.actualExpenses[category]);
-                    }
-                }
-                return totalMonthSpending;
-            });
-            document.getElementById('chart-title-prefix').textContent = 'Total';
-            initChart(labels, data, 'Total Actual Spending ($)');
-        };
-
-
-        // --- UI Update Functions ---
-
-        const displayBudgetSummary = (income, expenses) => {
-            document.getElementById('display-income').textContent = `$${income.toFixed(2)}`;
-
-            let totalAllocated = 0;
-            const allocatedExpensesList = document.getElementById('allocated-expenses-list');
-            allocatedExpensesList.innerHTML = ''; // Clear previous list
-
-            const expenseEntries = Object.entries(expenses);
-            if (expenseEntries.length === 0) {
-                allocatedExpensesList.innerHTML = '<li class="text-center text-gray-500">No expenses allocated yet.</li>';
-            } else {
-                expenseEntries.forEach(([category, amount]) => {
-                    totalAllocated += parseFloat(amount);
-                    const li = document.createElement('li');
-                    li.className = 'flex justify-between items-center bg-blue-50 p-2 rounded-md';
-                    li.innerHTML = `
-                        <span>${category}:</span>
-                        <span class="font-medium">$${parseFloat(amount).toFixed(2)}</span>
-                    `;
-                    allocatedExpensesList.appendChild(li);
-                });
-            }
-
-            document.getElementById('display-allocated-expenses').textContent = `$${totalAllocated.toFixed(2)}`;
-            const remaining = income - totalAllocated;
-            document.getElementById('display-remaining-budget').textContent = `$${remaining.toFixed(2)}`;
-            document.getElementById('display-remaining-budget').className = `font-bold text-lg ${remaining >= 0 ? 'text-green-500' : 'text-red-500'}`;
-        };
-
-        // Function to add a new expense input row for Budget Setup
-        const addExpenseInput = (category = '', amount = '', unit = 'dollar') => {
-            const expenseInputsDiv = document.getElementById('expense-inputs');
-            const newExpenseDiv = document.createElement('div');
-            newExpenseDiv.className = 'flex items-center space-x-2 expense-item';
-            newExpenseDiv.innerHTML = `
-                <input type="text" placeholder="Category Name" class="expense-category w-2/5" value="${category}">
-                <div class="flex items-center w-3/5 border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-blue-200 focus-within:border-blue-500">
-                    <input type="number" step="0.01" min="0" placeholder="Amount" class="expense-amount flex-grow p-2 focus:outline-none border-none bg-transparent" value="${amount}">
-
-                    <!-- New wrapper for the custom unit display and hidden select -->
-                    <div class="relative flex items-center bg-blue-200 border-l border-blue-300 rounded-r-md w-24">
-                        <span class="expense-unit-display px-3 py-2 text-blue-800 font-medium"></span>
-                        <div class="w-8 h-full flex items-center justify-center bg-blue-300 rounded-r-md border-l border-blue-400">
-                            <!-- SVG Arrow -->
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-                        <!-- Actual select element, positioned absolutely over the visual elements -->
-                        <select class="expense-unit absolute inset-0 opacity-0 cursor-pointer">
-                            <option value="dollar">$</option>
-                            <option value="percent">%</option>
-                        </select>
-                    </div>
-                </div>
-                <button type="button" class="remove-expense-btn bg-red-500 hover:bg-red-600 text-white p-2 rounded-full w-8 h-8 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
-                    </svg>
-                </button>
-            `;
-            expenseInputsDiv.appendChild(newExpenseDiv);
-
-            const selectElement = newExpenseDiv.querySelector('.expense-unit');
-            const displaySpan = newExpenseDiv.querySelector('.expense-unit-display');
-
-            // Set initial selected option and display text
-            selectElement.value = unit;
-            displaySpan.textContent = unit === 'dollar' ? '$' : '%';
-
-            // Add event listener for change on the transparent select
-            selectElement.addEventListener('change', () => {
-                displaySpan.textContent = selectElement.value === 'dollar' ? '$' : '%';
-            });
-
-            // Add event listener to the new remove button
-            newExpenseDiv.querySelector('.remove-expense-btn').addEventListener('click', (event) => {
-                event.target.closest('.expense-item').remove();
-            });
-        };
-
-        // Function to add a new actual expense input row for Record Spending form
-        const addActualExpenseInput = (category = '', amount = '') => {
-            const actualExpenseInputsDiv = document.getElementById('actual-expense-inputs');
-            // Remove "no categories message" if present
-            const noCategoriesMessage = document.getElementById('no-categories-message');
-            if (noCategoriesMessage) {
-                noCategoriesMessage.remove();
-            }
-
-            const newActualExpenseDiv = document.createElement('div');
-            newActualExpenseDiv.className = 'flex items-center space-x-2 actual-expense-item';
-            newActualExpenseDiv.innerHTML = `
-                <input type="text" placeholder="Category Name" class="actual-expense-category w-2/5" value="${category}">
-                <input type="number" step="0.01" min="0" placeholder="Actual Amount ($)" class="actual-expense-amount flex-grow p-2 focus:outline-none border border-gray-300 rounded-md" value="${amount}">
-                <button type="button" class="remove-actual-expense-btn bg-red-500 hover:bg-red-600 text-white p-2 rounded-full w-8 h-8 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
-                    </svg>
-                </button>
-            `;
-            actualExpenseInputsDiv.appendChild(newActualExpenseDiv);
-
-            // Add event listener to the new remove button
-            newActualExpenseDiv.querySelector('.remove-actual-expense-btn').addEventListener('click', (event) => {
-                event.target.closest('.actual-expense-item').remove();
-                // Re-add "no categories message" if all inputs are removed and month is selected
-                if (actualExpenseInputsDiv.querySelectorAll('.actual-expense-item').length === 0 && document.getElementById('month-spent').value) {
-                     actualExpenseInputsDiv.innerHTML += '<p class="text-center text-gray-500" id="no-categories-message">No categories found for this month. Add manually.</p>';
-                } else if (actualExpenseInputsDiv.querySelectorAll('.actual-expense-item').length === 0 && !document.getElementById('month-spent').value) {
-                     actualExpenseInputsDiv.innerHTML += '<p class="text-center text-gray-500" id="no-categories-message">Select a month to load categories or add manually.</p>';
-                }
-            });
-        };
-
-        // Function to display spending history for a selected category AND update the chart
-        const displayCategorySpendingHistory = (selectedCategory) => {
-            const categorySpendingDetailsList = document.getElementById('category-spending-details');
-            categorySpendingDetailsList.innerHTML = ''; // Clear previous list
-
-            const chartTitlePrefix = document.getElementById('chart-title-prefix');
-
-            if (!selectedCategory || selectedCategory === "") {
-                categorySpendingDetailsList.innerHTML = '<li class="text-center text-gray-500">Select a category to see its spending history.</li>';
-                updateTotalSpendingChart(); // Go back to total spending chart
-                return;
-            }
-
-            const filteredData = allSpendingHistory.filter(record =>
-                record.actualExpenses && record.actualExpenses.hasOwnProperty(selectedCategory)
-            );
-
-            if (filteredData.length === 0) {
-                categorySpendingDetailsList.innerHTML = `<li class="text-center text-gray-500">No spending recorded for "${selectedCategory}".</li>`;
-                // If no data for category, show an empty chart for that category
-                chartTitlePrefix.textContent = selectedCategory;
-                initChart([], [], `${selectedCategory} Spending ($)`);
-            } else {
-                filteredData.forEach(record => {
-                    const li = document.createElement('li');
-                    li.className = 'flex justify-between items-center bg-gray-50 p-2 rounded-md';
-                    li.innerHTML = `
-                        <span>${record.month}:</span>
-                        <span class="font-medium text-purple-600">$${parseFloat(record.actualExpenses[selectedCategory]).toFixed(2)}</span>
-                    `;
-                    categorySpendingDetailsList.appendChild(li);
-                });
-
-                // Update the chart for the selected category
-                const labels = filteredData.map(d => d.month);
-                const data = filteredData.map(d => parseFloat(d.actualExpenses[selectedCategory]));
-                chartTitlePrefix.textContent = selectedCategory;
-                initChart(labels, data, `${selectedCategory} Spending ($)`);
-            }
-        };
-
-
-        // --- Event Listeners ---
-
-        // Add expense category dynamically for Budget Setup
-        document.getElementById('add-expense').addEventListener('click', () => {
-            addExpenseInput();
-        });
-
-        // Event delegation for initial remove buttons in Budget Setup
-        document.getElementById('expense-inputs').addEventListener('click', (event) => {
-            if (event.target.closest('.remove-expense-btn')) {
-                event.target.closest('.expense-item').remove();
-            }
-        });
-
-        // Handle budget form submission (Save Current Budget)
-        document.getElementById('budget-form').addEventListener('submit', (event) => {
-            event.preventDefault();
-            const income = parseFloat(document.getElementById('income').value) || 0;
-            const expenses = {};
-            document.querySelectorAll('#expense-inputs .expense-item').forEach((expenseItemDiv) => {
-                const categoryInput = expenseItemDiv.querySelector('.expense-category');
-                const amountInput = expenseItemDiv.querySelector('.expense-amount');
-                const unitSelect = expenseItemDiv.querySelector('.expense-unit');
-
-                const categoryName = categoryInput.value.trim();
-                let amount = parseFloat(amountInput.value) || 0;
-                const unit = unitSelect.value;
-
-                if (categoryName) { // Allow 0 amount, but not empty category name
-                    if (unit === 'percent') {
-                        // Calculate dollar amount if unit is percentage
-                        amount = (income * amount) / 100;
-                    }
-                    expenses[categoryName] = amount;
-                }
-            });
-
-            saveBudget(income, expenses);
-        });
-
-        // Event listener for month-spent input to load categories
-        document.getElementById('month-spent').addEventListener('change', async (event) => {
-            const selectedMonth = event.target.value;
-            const actualExpenseInputsDiv = document.getElementById('actual-expense-inputs');
-            const addActualExpenseButton = document.getElementById('add-actual-expense');
-
-            actualExpenseInputsDiv.innerHTML = '<label class="block text-gray-700 text-sm font-medium mb-1">Actual Spending by Category:</label>'; // Clear previous inputs
-
-            if (!userId) {
-                actualExpenseInputsDiv.innerHTML += '<p class="text-center text-gray-500">Please sign in to load categories.</p>';
-                actualExpenseInputsDiv.classList.add('hidden');
-                addActualExpenseButton.classList.add('hidden');
-                return;
-            }
-
-            if (selectedMonth) {
-                // Show the actual expense input section
-                actualExpenseInputsDiv.classList.remove('hidden');
-                actualExpenseInputsDiv.classList.add('flex-col'); // Add flex-col for proper spacing
-                addActualExpenseButton.classList.remove('hidden');
-
-                const currentIncome = parseFloat(document.getElementById('income').value) || 0;
-                let categoriesAndAmountsToLoad = {};
-
-                // 1. Get currently allocated expenses from the "Monthly Budget Setup" section
-                document.querySelectorAll('#expense-inputs .expense-item').forEach((expenseItemDiv) => {
-                    const categoryInput = expenseItemDiv.querySelector('.expense-category');
-                    const amountInput = expenseItemDiv.querySelector('.expense-amount');
-                    const unitSelect = expenseItemDiv.querySelector('.expense-unit');
-
-                    const categoryName = categoryInput.value.trim();
-                    let amount = parseFloat(amountInput.value) || 0;
-                    const unit = unitSelect.value;
-
-                    if (categoryName) {
-                        if (unit === 'percent') {
-                            amount = (currentIncome * amount) / 100;
-                        }
-                        categoriesAndAmountsToLoad[categoryName] = amount;
-                    }
-                });
-
-                // 2. Load historical allocated budget for the selected month (overrides current setup if it exists)
-                const historicalBudgetRef = doc(db, `/artifacts/${appId}/users/${userId}/historicalBudgets`, selectedMonth);
-                const historicalBudgetSnap = await getDoc(historicalBudgetRef);
-                if (historicalBudgetSnap.exists()) {
-                    Object.assign(categoriesAndAmountsToLoad, historicalBudgetSnap.data().expenses || {});
-                }
-
-                // 3. Load previously recorded actual spending for the selected month (overrides both allocated if it exists)
-                const recordedSpendingRef = doc(db, `/artifacts/${appId}/users/${userId}/spendingHistory`, selectedMonth);
-                const recordedSpendingSnap = await getDoc(recordedSpendingRef);
-                if (recordedSpendingSnap.exists()) {
-                    Object.assign(categoriesAndAmountsToLoad, recordedSpendingSnap.data().actualExpenses || {});
-                }
-
-                // Populate actual expense inputs based on the combined data
-                if (Object.keys(categoriesAndAmountsToLoad).length > 0) {
-                    for (const category in categoriesAndAmountsToLoad) {
-                        const amount = categoriesAndAmountsToLoad[category];
-                        addActualExpenseInput(category, amount);
-                    }
-                } else {
-                    actualExpenseInputsDiv.innerHTML += '<p class="text-center text-gray-500" id="no-categories-message">No categories found for this month. Add manually.</p>';
-                }
-
-            } else {
-                 actualExpenseInputsDiv.innerHTML += '<p class="text-center text-gray-500" id="no-categories-message">Select a month to load categories or add manually.</p>';
-                 actualExpenseInputsDiv.classList.add('hidden');
-                 actualExpenseInputsDiv.classList.remove('flex-col'); // Remove flex-col if hidden
-                 addActualExpenseButton.classList.add('hidden');
-            }
-        });
-
-        // Add actual expense category dynamically
-        document.getElementById('add-actual-expense').addEventListener('click', () => {
-            addActualExpenseInput();
-        });
-
-        // Event delegation for remove buttons in Actual Spending
-        document.getElementById('actual-expense-inputs').addEventListener('click', (event) => {
-            if (event.target.closest('.remove-actual-expense-btn')) {
-                event.target.closest('.actual-expense-item').remove();
-                if (document.getElementById('actual-expense-inputs').querySelectorAll('.actual-expense-item').length === 0) {
-                    const selectedMonth = document.getElementById('month-spent').value;
-                    document.getElementById('actual-expense-inputs').innerHTML += `<p class="text-center text-gray-500" id="no-categories-message">${selectedMonth ? 'No categories found for this month. Add manually.' : 'Select a month to load categories or add manually.'}</p>`;
-                }
-            }
-        });
-
-
-        // Handle record spending form submission
-        document.getElementById('record-spending-form').addEventListener('submit', (event) => {
-            event.preventDefault();
-            const month = document.getElementById('month-spent').value;
-            const actualExpenses = {};
-
-            if (!month) {
-                console.warn("Please select a month to record spending.");
-                // In a real app, you might show a user-friendly message
-                return;
-            }
-
-            document.querySelectorAll('#actual-expense-inputs .actual-expense-item').forEach((expenseItemDiv) => {
-                const categoryInput = expenseItemDiv.querySelector('.actual-expense-category');
-                const amountInput = expenseItemDiv.querySelector('.actual-expense-amount');
-
-                const categoryName = categoryInput.value.trim();
-                const amount = parseFloat(amountInput.value) || 0;
-
-                if (categoryName) { // Allow 0 amount, but not empty category name
-                    actualExpenses[categoryName] = amount;
-                }
-            });
-
-            if (Object.keys(actualExpenses).length > 0) {
-                recordSpending(month, actualExpenses);
-            } else {
-                console.warn("Please enter at least one actual spending amount.");
-                // Show user message
-            }
-        });
-
-        // Event listener for category filter dropdown
-        document.getElementById('category-filter').addEventListener('change', (event) => {
-            const selectedCategory = event.target.value;
-            displayCategorySpendingHistory(selectedCategory);
-        });
-
-        // --- Gemini API Integration ---
-        document.getElementById('get-budget-tips-btn').addEventListener('click', callGeminiAPIForBudgetTips);
-
-        async function callGeminiAPIForBudgetTips() {
-            const tipsOutputDiv = document.getElementById('budget-tips-output');
-            const loadingSpinner = document.getElementById('loading-spinner');
-            const errorMessage = document.getElementById('tips-error-message');
-
-            tipsOutputDiv.textContent = ''; // Clear previous tips
-            tipsOutputDiv.classList.add('hidden'); // Hide tips area initially
-            errorMessage.classList.add('hidden'); // Hide error message
-            loadingSpinner.classList.remove('hidden'); // Show loading spinner
-
-            try {
-                // Get current income
-                const income = parseFloat(document.getElementById('income').value) || 0;
-
-                // Get current allocated expenses
-                const expenses = {};
-                document.querySelectorAll('#expense-inputs .expense-item').forEach((expenseItemDiv) => {
-                    const categoryInput = expenseItemDiv.querySelector('.expense-category');
-                    const amountInput = expenseItemDiv.querySelector('.expense-amount');
-                    const unitSelect = expenseItemDiv.querySelector('.expense-unit');
-
-                    const categoryName = categoryInput.value.trim();
-                    let amount = parseFloat(amountInput.value) || 0;
-                    const unit = unitSelect.value;
-
-                    if (categoryName) {
-                        if (unit === 'percent') {
-                            amount = (income * amount) / 100;
-                        }
-                        expenses[categoryName] = amount;
-                    }
-                });
-
-                let prompt = `I have a monthly income of $${income.toFixed(2)}.`;
-                if (Object.keys(expenses).length > 0) {
-                    prompt += ` My allocated expenses are: ${JSON.stringify(expenses)}.`;
-                } else {
-                    prompt += ` I haven't allocated any specific expenses yet.`;
-                }
-                prompt += ` Please provide 3-5 actionable budgeting tips to help me save money or optimize my spending, specifically considering these allocations. Focus on practical advice and avoid generic statements.`;
-
-                let chatHistory = [];
-                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-                const payload = { contents: chatHistory };
-                const apiKey = ""; // If you want to use models other than gemini-2.0-flash or imagen-3.0-generate-002, provide an API key here. Otherwise, leave this as-is.
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const result = await response.json();
-
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    const text = result.candidates[0].content.parts[0].text;
-                    tipsOutputDiv.textContent = text;
-                    tipsOutputDiv.classList.remove('hidden');
-                } else {
-                    errorMessage.textContent = 'Could not generate tips. Unexpected API response structure.';
-                    errorMessage.classList.remove('hidden');
-                    console.error("Unexpected API response structure:", result);
-                }
-
-            } catch (error) {
-                errorMessage.textContent = 'Failed to connect to the budgeting insights service. Please check your internet connection or try again later.';
-                errorMessage.classList.remove('hidden');
-                console.error("Error calling Gemini API:", error);
-            } finally {
-                loadingSpinner.classList.add('hidden'); // Hide loading spinner
+                spendingChart = new Chart(ctx, chartConfig);
             }
         }
+
+        // Function to update chart theme (called when dark mode changes)
+        function updateChartTheme() {
+            if (spendingChart) {
+                const currentTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                const textColor = currentTheme === 'dark' ? '#e2e8f0' : '#1f2937';
+                const gridColor = currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+
+                spendingChart.options.plugins.legend.labels.color = textColor;
+                spendingChart.options.scales.x.ticks.color = textColor;
+                spendingChart.options.scales.x.grid.color = gridColor;
+                spendingChart.options.scales.y.ticks.color = textColor;
+                spendingChart.options.scales.y.grid.color = gridColor;
+
+                spendingChart.update();
+            }
+        }
+
+        // --- Message Box Function (instead of alert) ---
+        function alertUser(message, type = 'blue') {
+            const messageBox = document.createElement('div');
+            messageBox.className = `fixed top-4 right-4 p-4 rounded-md text-white shadow-lg z-50 animate-fade-in`;
+
+            let bgColor = '';
+            if (type === 'green') {
+                bgColor = 'bg-green-500';
+            } else if (type === 'red') {
+                bgColor = 'bg-red-500';
+            } else {
+                bgColor = 'bg-blue-500';
+            }
+
+            messageBox.classList.add(bgColor);
+            messageBox.textContent = message;
+
+            document.body.appendChild(messageBox);
+
+            // Optional: Add a simple fade-out animation and remove
+            setTimeout(() => {
+                messageBox.classList.add('animate-fade-out');
+                messageBox.addEventListener('animationend', () => messageBox.remove());
+            }, 3000); // Display for 3 seconds
+        }
+
+        // Initial loads and setup
+        populateMonthYearDropdowns(); // Populate the new month/year dropdowns
+        loadCurrentMonthBudget(); // Loads or initializes current month inputs based on selected month/year
+        populateHistoryDropdown(); // Populates dropdown with existing months
+        updateSpendingChart(); // Renders the chart
     </script>
 </body>
 </html>
