@@ -92,12 +92,64 @@
                 flex-grow: 1;
             }
         }
+
+        /* Print specific styles */
+        @media print {
+            /* Hide elements that shouldn't be printed */
+            .no-print, header, .grid > section:first-child .mb-4:first-child, /* Month select div */
+            .grid > section:first-child .mb-4:nth-child(2), /* Income input div */
+            .grid > section:first-child #expensesContainer, /* Expense input rows */
+            .grid > section:first-child #addExpenseBtn,
+            .grid > section:first-child #saveBudgetBtn,
+            .grid > section:first-child #printBudgetBtn, /* Hide print button itself */
+            #expenseCategorySelect, /* Hide individual chart category select */
+            #toggleTipsPaneBtn,
+            #getBudgetTipsBtn {
+                display: none !important;
+            }
+
+            /* Make sure charts and summaries are visible and fill space */
+            .container {
+                width: 100% !important;
+                max-width: none !important;
+                padding: 0 !important;
+            }
+            .grid {
+                grid-template-columns: 1fr !important; /* Stack sections for print */
+                gap: 0 !important;
+            }
+            section {
+                box-shadow: none !important;
+                border: none !important;
+                margin-top: 0 !important;
+                padding: 1rem !important;
+            }
+            .chart-container {
+                padding: 0.5rem !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            /* Ensure text color is black for print */
+            body, h1, h2, h3, p, span, strong {
+                color: black !important;
+            }
+            /* Ensure dark mode elements don't affect print */
+            body.dark .bg-white,
+            body.dark .chart-container,
+            body.dark #budgetTipsOutput {
+                background-color: white !important;
+                color: black !important;
+            }
+            body.dark .border-gray-200 {
+                border-color: #e2e8f0 !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-900 min-h-screen flex flex-col items-center">
     <div class="container mx-auto p-6 max-w-4xl w-full">
         <!-- Header -->
-        <header class="flex justify-between items-center mb-8">
+        <header class="flex justify-between items-center mb-8 no-print">
             <h1 class="text-4xl font-extrabold text-blue-600">Smart Budget</h1>
             <div class="flex space-x-2">
                 <button id="themeToggle" class="px-4 py-2 rounded-full bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 shadow-md transition-colors duration-300 hover:bg-gray-300 dark:hover:bg-gray-600">
@@ -107,7 +159,7 @@
         </header>
 
         <!-- Main Content Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
             <!-- Budget Input Section -->
             <section class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 md:col-span-2">
                 <h2 class="text-2xl font-bold mb-6 text-gray-700">Set Your Budget</h2>
@@ -121,7 +173,6 @@
                             <!-- Options will be dynamically added here by JavaScript -->
                         </select>
                         <button id="nextMonthBtn" class="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-200 shadow-sm">→</button>
-                        <!--<button id="currentMonthBtn" class="px-3 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500 transition-colors duration-200 shadow-sm">Today</button> -->
                     </div>
                 </div>
 
@@ -148,6 +199,7 @@
                 <button id="addExpenseBtn" class="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition-colors duration-200 mb-4 shadow-md">➕ Add Expense</button>
 
                 <button id="saveBudgetBtn" class="w-full bg-green-500 text-white py-3 rounded-md hover:bg-green-600 transition-colors duration-200 shadow-md text-lg font-semibold">Save Budget</button>
+                <button id="printBudgetBtn" class="w-full mt-4 bg-purple-600 text-white py-3 rounded-md hover:bg-purple-700 transition-colors duration-200 shadow-md text-lg font-semibold">🖨️ Print Budget</button>
             </section>
 
             <!-- Budget Summary & Chart Section -->
@@ -172,7 +224,7 @@
         <section class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 mt-8">
             <h2 class="text-2xl font-bold mb-6 text-gray-700">Individual Expense History</h2>
 
-            <div class="mb-4">
+            <div class="mb-4 no-print">
                 <label for="expenseCategorySelect" class="block text-sm font-medium text-gray-700 mb-1">Select Expense Category:</label>
                 <select id="expenseCategorySelect" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md shadow-sm">
                     <option value="">-- Select a category --</option>
@@ -185,8 +237,8 @@
             </div>
         </section>
 
-        <!-- Toggle Button for Tips Pane (Moved above AI Budget Insights) -->
-        <div class="flex justify-center mt-8 mb-4">
+        <!-- Toggle Button for Tips Pane -->
+        <div class="flex justify-center mt-8 mb-4 no-print">
             <button id="toggleTipsPaneBtn" class="px-6 py-2 rounded-full bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 shadow-md transition-colors duration-300 hover:bg-gray-300 dark:hover:bg-gray-600">
                 Hide Tips
             </button>
@@ -220,30 +272,31 @@
         const summaryExpenses = document.getElementById('summaryExpenses');
         const summaryRemaining = document.getElementById('summaryRemaining');
         const spendingChartCanvas = document.getElementById('spendingChart');
+        const printBudgetBtn = document.getElementById('printBudgetBtn'); 
+
 
         // New DOM Elements for month navigation
         const prevMonthBtn = document.getElementById('prevMonthBtn');
         const nextMonthBtn = document.getElementById('nextMonthBtn');
-        const currentMonthBtn = document.getElementById('currentMonthBtn');
 
         // New DOM elements for individual expense history
         const expenseCategorySelect = document.getElementById('expenseCategorySelect');
         const individualExpenseChartCanvas = document.getElementById('individualExpenseChart');
 
         // New DOM elements for LLM integration
-        const aiBudgetTipsSection = document.getElementById('aiBudgetTipsSection'); // Reference to the entire section
+        const aiBudgetTipsSection = document.getElementById('aiBudgetTipsSection'); 
         const getBudgetTipsBtn = document.getElementById('getBudgetTipsBtn');
         const budgetTipsOutput = document.getElementById('budgetTipsOutput');
-        const toggleTipsPaneBtn = document.getElementById('toggleTipsPaneBtn'); // Moved to global scope
+        const toggleTipsPaneBtn = document.getElementById('toggleTipsPaneBtn');
 
 
         // Chart instances
         let spendingChart;
-        let individualExpenseChart; // New chart instance for individual expenses
+        let individualExpenseChart; 
 
         // Data Structure: budgets will be an object where keys are month-year strings (e.g., "2023-01")
         // and values are objects containing income, expenses array.
-        let budgets = {}; // This will hold all monthly budget data
+        let budgets = {}; 
 
         // Constants
         const LOCAL_STORAGE_KEY = 'smartBudgetAppData';
@@ -255,11 +308,11 @@
             loadBudgets();
             populateMonthSelect();
             renderCurrentMonthBudget();
-            updateChart(); // Overall income/expense chart
-            populateExpenseCategoriesSelect(); // Populate new category dropdown
-            updateIndividualExpenseChart(); // Render individual expense chart (initially empty or first category)
+            updateChart(); 
+            populateExpenseCategoriesSelect(); 
+            updateIndividualExpenseChart(); 
             applySavedTheme();
-            updateThemeToggleButton(); // Call on load to set initial icon
+            updateThemeToggleButton(); 
             // Set initial state for tips pane visibility
             const isTipsPaneHidden = localStorage.getItem('hideTipsPane') === 'true';
             if (isTipsPaneHidden) {
@@ -269,6 +322,28 @@
                 aiBudgetTipsSection.classList.remove('hidden');
                 toggleTipsPaneBtn.textContent = 'Hide Tips';
             }
+
+            // Moved event listeners inside DOMContentLoaded to ensure elements are loaded
+            printBudgetBtn.addEventListener('click', () => {
+                updateChart(); // Ensure charts are up-to-date before printing
+                updateIndividualExpenseChart(expenseCategorySelect.value);
+
+                window.print(); // Trigger the browser's print dialog
+
+                const restoreCharts = () => {
+                    updateChart(); // Re-render main chart
+                    updateIndividualExpenseChart(expenseCategorySelect.value); // Re-render individual chart
+                    window.removeEventListener('afterprint', restoreCharts); // Clean up the listener
+                };
+                window.addEventListener('afterprint', restoreCharts);
+            });
+
+            toggleTipsPaneBtn.addEventListener('click', () => {
+                aiBudgetTipsSection.classList.toggle('hidden');
+                const isHidden = aiBudgetTipsSection.classList.contains('hidden');
+                toggleTipsPaneBtn.textContent = isHidden ? 'Show Tips' : 'Hide Tips';
+                localStorage.setItem('hideTipsPane', isHidden); 
+            });
         });
 
         /**
@@ -287,7 +362,7 @@
             document.body.classList.toggle('dark');
             const isDarkMode = document.body.classList.contains('dark');
             localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
-            updateThemeToggleButton(); // Update icon after toggle
+            updateThemeToggleButton(); 
             // Re-render both charts to pick up theme colors
             updateChart();
             updateIndividualExpenseChart(expenseCategorySelect.value);
@@ -301,48 +376,45 @@
             if (savedTheme === 'dark') {
                 document.body.classList.add('dark');
             }
-            // The icon will be set by updateThemeToggleButton called in DOMContentLoaded
         }
 
         /**
          * Generates month options for the month selector.
-         * Includes the current month, previous 11 months, and next 5 years.
+         * Includes the current month, previous 11 months, and up to the year 2070.
          */
         function populateMonthSelect() {
-            monthSelect.innerHTML = ''; // Clear existing options
+            monthSelect.innerHTML = ''; 
             const today = new Date();
             const currentMonth = today.getMonth();
             const currentYear = today.getFullYear();
 
             // Add past 11 months (total 12 months including current)
-            for (let i = 11; i >= 0; i--) { // Iterate backwards to add oldest months first
+            for (let i = 11; i >= 0; i--) { 
                 const date = new Date(currentYear, currentMonth - i, 1);
                 const monthName = date.toLocaleString('default', { month: 'long' });
                 const year = date.getFullYear();
-                const monthValue = `${year}-${String(date.getMonth() + 1).padStart(2, '0')}`; // Format
+                const monthValue = `${year}-${String(date.getMonth() + 1).padStart(2, '0')}`; 
                 const option = document.createElement('option');
                 option.value = monthValue;
                 option.textContent = `${monthName} ${year}`;
                 monthSelect.appendChild(option);
             }
 
-            // Add months for the next 5 years
-            const futureYears = 100;
-            for (let y = 0; y <= futureYears; y++) {
+            // Add months up to the year 2070
+            const endYear = 2070;
+            for (let y = currentYear; y <= endYear; y++) {
                 for (let m = 0; m < 12; m++) {
-                    // Start from the current month for the current year
-                    // For future years, start from January (m=0)
-                    if (y === 0 && m < currentMonth) {
-                        continue; // Skip months already added for the current year (past months)
+                    // For the current year, only add future months (after currentMonth)
+                    if (y === currentYear && m < currentMonth) {
+                        continue;
                     }
 
-                    const date = new Date(currentYear + y, m, 1);
+                    const date = new Date(y, m, 1);
                     const monthName = date.toLocaleString('default', { month: 'long' });
                     const year = date.getFullYear();
-                    const monthValue = `${year}-${String(date.getMonth() + 1).padStart(2, '0')}`; // Format
+                    const monthValue = `${year}-${String(date.getMonth() + 1).padStart(2, '0')}`; 
 
-                    // Prevent adding duplicates if some months overlap (e.g., current year's remaining months)
-                    // Only add if not already present
+                    // Only add if not already present (prevents duplicates for current year's remaining months)
                     if (!Array.from(monthSelect.options).some(opt => opt.value === monthValue)) {
                         const option = document.createElement('option');
                         option.value = monthValue;
@@ -351,7 +423,6 @@
                     }
                 }
             }
-
 
             // Set the current month as selected by default
             const currentMonthFormatted = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
@@ -387,17 +458,6 @@
         });
 
         /**
-         * Sets the selected month to the current month.
-         */
-        currentMonthBtn.addEventListener('click', () => {
-            const today = new Date();
-            const currentMonthFormatted = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-            monthSelect.value = currentMonthFormatted;
-            renderCurrentMonthBudget();
-        });
-
-
-        /**
          * Creates a new expense input row and appends it to the expenses container.
          * Includes input fields for name, value, type (amount/percentage), and a remove button.
          */
@@ -411,7 +471,7 @@
          */
         function addExpenseRow(expenseData = { name: '', value: '', type: 'amount' }) {
             const expenseItem = document.createElement('div');
-            expenseItem.className = 'expense-item flex items-center space-x-2 mb-2'; // Added mb-2 for spacing
+            expenseItem.className = 'expense-item flex items-center space-x-2 mb-2'; 
 
             expenseItem.innerHTML = `
                 <input type="text" placeholder="Expense Name (e.g., Rent)" class="expense-name flex-grow rounded-md border-gray-300 shadow-sm p-2" value="${expenseData.name}">
@@ -430,8 +490,8 @@
                 // Re-calculate and update summary/chart after removal
                 updateBudgetSummary();
                 updateChart();
-                populateExpenseCategoriesSelect(); // Update categories if an expense is removed
-                updateIndividualExpenseChart(expenseCategorySelect.value); // Update individual chart
+                populateExpenseCategoriesSelect(); 
+                updateIndividualExpenseChart(expenseCategorySelect.value); 
             });
 
             // Add event listeners for input changes to update summary and chart in real-time
@@ -469,7 +529,7 @@
             const selectedMonth = monthSelect.value;
             const monthData = budgets[selectedMonth];
 
-            clearExpenseRows(); // Clear existing expense inputs
+            clearExpenseRows(); 
 
             if (monthData) {
                 incomeInput.value = monthData.income;
@@ -477,9 +537,9 @@
             } else {
                 // If no data for this month, reset inputs and add a default expense row
                 incomeInput.value = '';
-                addExpenseRow(); // Add a blank expense row for new month
+                addExpenseRow(); 
             }
-            updateBudgetSummary(); // Update summary based on current inputs
+            updateBudgetSummary(); 
         }
 
         /**
@@ -495,7 +555,7 @@
                 const value = parseFloat(item.querySelector('.expense-value').value) || 0;
                 const type = item.querySelector('.expense-type').value;
 
-                if (name) { // Only add expenses with a name
+                if (name) { 
                     expenses.push({ name, value, type });
                 }
             });
@@ -516,12 +576,12 @@
                     totalExpenses += expense.value;
                 } else if (expense.type === 'percentage') {
                     totalExpenses += (income * (expense.value / 100));
-                }
+                    }
             });
 
             const remainingBudget = income - totalExpenses;
 
-            summaryMonth.textContent = selectedMonthText;
+            summaryMonth.textContent = remainingBudget.toFixed(2);
             summaryIncome.textContent = income.toFixed(2);
             summaryExpenses.textContent = totalExpenses.toFixed(2);
             summaryRemaining.textContent = remainingBudget.toFixed(2);
@@ -553,11 +613,11 @@
             const { income, expenses } = getCurrentBudgetInputs();
 
             budgets[selectedMonth] = { income, expenses };
-            saveBudgets(); // Save to local storage
-            updateChart(); // Update the chart with the new data
-            populateExpenseCategoriesSelect(); // Refresh categories after saving
-            updateIndividualExpenseChart(expenseCategorySelect.value); // Update individual chart
-            alertUser('Budget Saved! ✨'); // Use a custom alert/toast
+            saveBudgets(); 
+            updateChart(); 
+            populateExpenseCategoriesSelect(); 
+            updateIndividualExpenseChart(expenseCategorySelect.value); 
+            alertUser('Budget Saved! ✨'); 
         });
 
         /**
@@ -570,7 +630,7 @@
                     budgets = JSON.parse(savedData);
                 } catch (e) {
                     console.error("Error parsing stored budget data:", e);
-                    budgets = {}; // Reset if data is corrupted
+                    budgets = {}; 
                 }
             } else {
                 budgets = {};
@@ -620,7 +680,7 @@
                 labels: monthLabels,
                 datasets: [
                     {
-                        label: '💰', // Changed 'Income' to '💰'
+                        label: '💰', 
                         data: incomeData,
                         borderColor: 'rgb(75, 192, 192)',
                         backgroundColor: 'rgba(75, 192, 192, 0.2)',
@@ -628,7 +688,7 @@
                         fill: true
                     },
                     {
-                        label: '$ Spent', // Changed 'Expenses' to '$ Spent'
+                        label: '$ Spent', 
                         data: expensesData,
                         borderColor: 'rgb(255, 99, 132)',
                         backgroundColor: 'rgba(255, 99, 132, 0.2)',
@@ -640,7 +700,7 @@
 
             const chartOptions = {
                 responsive: true,
-                maintainAspectRatio: false, // Allows chart to take full height of parent
+                maintainAspectRatio: false, 
                 plugins: {
                     legend: {
                         position: 'top',
@@ -676,7 +736,7 @@
             };
 
             if (spendingChart) {
-                spendingChart.destroy(); // Destroy old chart instance before creating a new one
+                spendingChart.destroy(); 
             }
 
             spendingChart = new Chart(spendingChartCanvas, {
@@ -756,7 +816,7 @@
                     {
                         label: selectedCategory ? `${selectedCategory} ($)` : 'No Category Selected',
                         data: expenseValues,
-                        borderColor: selectedCategory ? 'rgb(54, 162, 235)' : 'rgb(150, 150, 150)', // Blue for specific, gray for none
+                        borderColor: selectedCategory ? 'rgb(54, 162, 235)' : 'rgb(150, 150, 150)', 
                         backgroundColor: selectedCategory ? 'rgba(54, 162, 235, 0.2)' : 'rgba(150, 150, 150, 0.1)',
                         tension: 0.1,
                         fill: true
@@ -823,14 +883,6 @@
         // Event listener for "Get Budget Tips" button
         getBudgetTipsBtn.addEventListener('click', getBudgetOptimizationTips);
 
-        // Event listener for the new toggle tips pane button
-        toggleTipsPaneBtn.addEventListener('click', () => {
-            aiBudgetTipsSection.classList.toggle('hidden');
-            const isHidden = aiBudgetTipsSection.classList.contains('hidden');
-            toggleTipsPaneBtn.textContent = isHidden ? 'Show Tips' : 'Hide Tips';
-            localStorage.setItem('hideTipsPane', isHidden); // Save preference
-        });
-
         /**
          * Fetches personalized budget optimization tips from the Gemini API.
          */
@@ -856,7 +908,7 @@
             let chatHistory = [];
             chatHistory.push({ role: "user", parts: [{ text: prompt }] });
             const payload = { contents: chatHistory };
-            const apiKey = ""; // API key is provided by Canvas runtime
+            const apiKey = ""; 
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
             try {
@@ -872,7 +924,7 @@
                     result.candidates[0].content.parts.length > 0) {
                     const text = result.candidates[0].content.parts[0].text;
                     budgetTipsOutput.innerHTML = `<h3 class="font-semibold mb-2">Budget Tips for ${selectedMonthText}:</h3>` +
-                                                 `<p class="whitespace-pre-wrap">${text}</p>`; // Use pre-wrap to respect newlines
+                                                 `<p class="whitespace-pre-wrap">${text}</p>`; 
                 } else {
                     budgetTipsOutput.innerHTML = '<p class="text-red-500">Could not generate tips. Please try again.</p>';
                     console.error('Gemini API response structure unexpected:', result);
@@ -882,7 +934,6 @@
                 console.error('Error calling Gemini API:', error);
             }
         }
-
 
         // Re-render chart on theme change to update colors
         themeToggle.addEventListener('click', () => {
@@ -917,23 +968,23 @@
             `;
 
             if (type === 'success') {
-                alertBox.style.backgroundColor = '#4CAF50'; // Green
+                alertBox.style.backgroundColor = '#4CAF50'; 
             } else if (type === 'error') {
-                alertBox.style.backgroundColor = '#f44336'; // Red
+                alertBox.style.backgroundColor = '#f44336'; 
             } else {
-                alertBox.style.backgroundColor = '#333'; // Default dark
+                alertBox.style.backgroundColor = '#333'; 
             }
 
             document.body.appendChild(alertBox);
 
             setTimeout(() => {
                 alertBox.style.opacity = '1';
-            }, 10); // Small delay to trigger transition
+            }, 10); 
 
             setTimeout(() => {
                 alertBox.style.opacity = '0';
                 alertBox.addEventListener('transitionend', () => alertBox.remove());
-            }, 3000); // Hide after 3 seconds
+            }, 3000); 
         }
     </script>
 </body>
