@@ -96,16 +96,39 @@
         /* Print specific styles */
         @media print {
             /* Hide elements that shouldn't be printed */
-            .no-print, header, .grid > section:first-child .mb-4:first-child, /* Month select div */
-            .grid > section:first-child .mb-4:nth-child(2), /* Income input div */
-            .grid > section:first-child #expensesContainer, /* Expense input rows */
+            .no-print, header,
+            .grid > section:first-child .mb-4:first-child, /* Month select div */
+            /* .grid > section:first-child #expensesContainer, Removed this to show expenses */
             .grid > section:first-child #addExpenseBtn,
             .grid > section:first-child #saveBudgetBtn,
             .grid > section:first-child #printBudgetBtn, /* Hide print button itself */
             #expenseCategorySelect, /* Hide individual chart category select */
             #toggleTipsPaneBtn,
-            #getBudgetTipsBtn {
+            #getBudgetTipsBtn,
+            .remove-expense, /* Hide remove buttons in expenses */
+            .expense-type /* Hide percentage/amount dropdowns in expenses */ {
                 display: none !important;
+            }
+
+            /* Make sure inputs appear as plain text when printed */
+            .expense-name, .expense-value, #incomeInput {
+                border: none !important;
+                background: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                display: inline !important; /* To make them flow naturally */
+                width: auto !important;
+                box-shadow: none !important;
+                color: black !important; /* Ensure text is black for print */
+            }
+
+            /* Adjust the layout of expense items for printing */
+            #expensesContainer .expense-item {
+                display: flex !important; /* Keep as flex to align name and value */
+                justify-content: space-between !important; /* Space between name and value */
+                padding: 0.2rem 0 !important;
+                border-bottom: 1px dashed #ccc !important; /* Subtle separator */
+                margin-bottom: 0.2rem !important;
             }
 
             /* Make sure charts and summaries are visible and fill space */
@@ -159,9 +182,10 @@
         </header>
 
         <!-- Main Content Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-            <!-- Budget Input Section -->
-            <section class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 md:col-span-2">
+        <!-- Changed to md:grid-cols-2 for equal width columns on medium screens and up -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <!-- Budget Input Section - Now takes 1 out of 2 columns by default -->
+            <section class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
                 <h2 class="text-2xl font-bold mb-6 text-gray-700">Set Your Budget</h2>
 
                 <!-- Month Selector with Navigation Buttons -->
@@ -202,8 +226,8 @@
                 <button id="printBudgetBtn" class="w-full mt-4 bg-purple-600 text-white py-3 rounded-md hover:bg-purple-700 transition-colors duration-200 shadow-md text-lg font-semibold">🖨️ Print Budget</button>
             </section>
 
-            <!-- Budget Summary & Chart Section -->
-            <section class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 flex flex-col md:col-span-2">
+            <!-- Budget Summary & Chart Section - Now takes 1 out of 2 columns by default -->
+            <section class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 flex flex-col">
                 <h2 class="text-2xl font-bold mb-6 text-gray-700">Budget Overview</h2>
                 <div id="budgetSummary" class="mb-6 space-y-2 text-lg">
                     <!-- Budget summary will be displayed here -->
@@ -581,7 +605,7 @@
 
             const remainingBudget = income - totalExpenses;
 
-            summaryMonth.textContent = remainingBudget.toFixed(2);
+            summaryMonth.textContent = selectedMonthText; // Fixed this line to show actual month text
             summaryIncome.textContent = income.toFixed(2);
             summaryExpenses.textContent = totalExpenses.toFixed(2);
             summaryRemaining.textContent = remainingBudget.toFixed(2);
