@@ -592,12 +592,12 @@
 
                     // Add to detailed expenses list
                     const expenseItem = document.createElement('p');
-                    expenseItem.className = 'flex justify-between items-center text-lg font-semibold text-gray-900 dark:text-gray-200';
+                    expenseItem.className = 'flex justify-between items-center text-lg font-semibold text-gray-900 dark:text-gray-900';
                     expenseItem.innerHTML = `<span>${expense.name}:</span> <span class="font-medium">$${expenseAmount.toFixed(2)}</span>`;
                     detailedExpensesList.appendChild(expenseItem);
                 });
             } else {
-                detailedExpensesList.innerHTML = '<p class="text-gray-900 italic dark:text-gray-400 text-lg font-semibold">No expenses allocated for this month.</p>';
+                detailedExpensesList.innerHTML = '<p class="text-gray-900 italic dark:text-gray-900 text-lg font-semibold">No expenses allocated for this month.</p>';
             }
 
 
