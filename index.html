@@ -8,6 +8,42 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js CDN for charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"; // Added signInWithCustomToken import
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase global variables will be provided by the Canvas environment
+        // The appId was missing quotes around its string value, causing a ReferenceError.
+        // It has been corrected to "smart-budget-df8a2".
+        const appId = "smart-budget-df8a2"; //typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = {
+            apiKey: "AIzaSyBeGsnhUg4wSk4gmSsZco89lsDrGD2jyJw",
+            authDomain: "smart-budget-df8a2.firebaseapp.com",
+            projectId: "smart-budget-df8a2",
+            storageBucket: "smart-budget-df8a2.firebasestorage.app",
+            messagingSenderId: "575432955398",
+            appId: "1:575432955398:web:d8724f01e03fa034099587",
+            measurementId: "G-KFKPCKBH8Y"
+        };
+        //const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // Export Firebase instances for use in the main script
+        window.firebaseApp = app;
+        window.firebaseDb = db;
+        window.firebaseAuth = auth;
+        window.initialAuthToken = null;
+        window.appId = appId; // Make appId globally available
+        // Export auth functions directly for cleaner use in the main script
+        window.signInAnonymously = signInAnonymously;
+        window.signInWithCustomToken = signInWithCustomToken;
+    </script>
     <style>
         /* Custom styles for the app */
         body {
@@ -31,13 +67,15 @@
         }
 
         body.dark input,
-        body.dark select {
+        body.dark select,
+        body.dark textarea { /* Added textarea to dark mode styles */
             background-color: #4a5568;
             color: #e2e8f0;
             border-color: #6b7280;
         }
 
-        body.dark input::placeholder {
+        body.dark input::placeholder,
+        body.dark textarea::placeholder { /* Added textarea placeholder */
             color: #a0aec0;
         }
 
@@ -76,6 +114,16 @@
             border-color: #4a5568;
         }
 
+        /* --- New CSS for black text in dark mode for allocated expenses --- */
+        /* Reverted this to use Tailwind's dark:text-gray-200 which is more standard for dark mode for better contrast.
+           If you specifically need black text on a dark background, you can uncomment the original rule.
+        body.dark #detailedExpensesList p {
+            color: black !important;
+        }
+        */
+        /* --- End new CSS --- */
+
+
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .container {
@@ -103,7 +151,8 @@
             .grid > section:first-child #printBudgetBtn, /* Hide print button itself */
             #expenseCategorySelect, /* Hide individual chart category select */
             .remove-expense, /* Hide remove buttons in expenses */
-            .expense-type /* Hide percentage/amount dropdowns in expenses */ {
+            .expense-type, /* Hide percentage/amount dropdowns in expenses */
+            #feedbackSection /* Hide the entire feedback section */ {
                 display: none !important;
             }
 
@@ -155,7 +204,7 @@
             }
             /* Ensure dark mode elements don't affect print */
             body.dark .bg-white,
-            body.dark .chart-container { /* Removed #budgetTipsOutput */
+            body.dark .chart-container {
                 background-color: white !important;
                 color: black !important;
             }
@@ -266,7 +315,16 @@
             </div>
         </section>
 
-        <!-- The AI Budget Tips section and its toggle button have been removed -->
+        <!-- Feedback Section -->
+        <section id="feedbackSection" class="bg-white p-6 rounded-xl shadow-lg border border-gray-200 mt-8 no-print">
+            <h2 class="text-2xl font-bold mb-6 text-gray-700">Send Us Feedback!</h2>
+            <textarea id="feedbackText" rows="4" placeholder="Share your thoughts or suggestions for future updates..."
+                      class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 mb-4"></textarea>
+            <button id="submitFeedbackBtn" class="w-full bg-blue-500 text-white py-3 rounded-md hover:bg-blue-600 transition-colors duration-200 shadow-md text-lg font-semibold">
+                Submit Feedback
+            </button>
+            <div id="feedbackMessage" class="mt-4 text-center text-sm font-medium"></div>
+        </section>
     </div>
 
     <script>
@@ -298,12 +356,10 @@
         const expenseCategorySelect = document.getElementById('expenseCategorySelect');
         const individualExpenseChartCanvas = document.getElementById('individualExpenseChart');
 
-        // Removed LLM related DOM elements
-        // const aiBudgetTipsSection = document.getElementById('aiBudgetTipsSection'); 
-        // const getBudgetTipsBtn = document.getElementById('getBudgetTipsBtn');
-        // const budgetTipsOutput = document.getElementById('budgetTipsOutput');
-        // const toggleTipsPaneBtn = document.getElementById('toggleTipsPaneBtn');
-
+        // Feedback section DOM elements
+        const feedbackText = document.getElementById('feedbackText');
+        const submitFeedbackBtn = document.getElementById('submitFeedbackBtn');
+        const feedbackMessage = document.getElementById('feedbackMessage');
 
         // Chart instances
         let spendingChart;
@@ -316,10 +372,46 @@
         // Constants
         const LOCAL_STORAGE_KEY = 'smartBudgetAppData';
 
+        // Firebase instances will be available globally from the module script
+        let firebaseApp;
+        let firebaseDb;
+        let firebaseAuth;
+        let firebaseInitialAuthToken;
+        let firebaseAppId;
+
+
         /**
          * Initializes the application: loads data, sets up UI, and renders initial state.
          */
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Wait for Firebase to be initialized and available globally
+            await new Promise(resolve => {
+                const checkFirebase = setInterval(() => {
+                    if (window.firebaseApp && window.firebaseDb && window.firebaseAuth) {
+                        firebaseApp = window.firebaseApp;
+                        firebaseDb = window.firebaseDb;
+                        firebaseAuth = window.firebaseAuth;
+                        firebaseInitialAuthToken = window.initialAuthToken;
+                        firebaseAppId = window.appId;
+                        clearInterval(checkFirebase);
+                        resolve();
+                    }
+                }, 50); // Check every 50ms
+            });
+
+            // Authenticate with Firebase (anonymously if no token)
+            try {
+                if (firebaseInitialAuthToken) {
+                    await window.signInWithCustomToken(firebaseAuth, firebaseInitialAuthToken); // Corrected call
+                } else {
+                    await window.signInAnonymously(firebaseAuth); // Corrected call
+                }
+                console.log("Firebase authenticated successfully.");
+            } catch (error) {
+                console.error("Firebase authentication error:", error);
+                // Optionally show an error message to the user
+            }
+
             loadBudgets();
             populateMonthSelect();
             renderCurrentMonthBudget();
@@ -328,15 +420,6 @@
             updateIndividualExpenseChart(); 
             applySavedTheme();
             updateThemeToggleButton(); 
-            // Removed tips pane visibility logic
-            // const isTipsPaneHidden = localStorage.getItem('hideTipsPane') === 'true';
-            // if (isTipsPaneHidden) {
-            //     aiBudgetTipsSection.classList.add('hidden');
-            //     toggleTipsPaneBtn.textContent = 'Show Tips';
-            // } else {
-            //     aiBudgetTipsSection.classList.remove('hidden');
-            //     toggleTipsPaneBtn.textContent = 'Hide Tips';
-            // }
 
             // Moved event listeners inside DOMContentLoaded to ensure elements are loaded
             printBudgetBtn.addEventListener('click', () => {
@@ -353,13 +436,7 @@
                 window.addEventListener('afterprint', restoreCharts);
             });
 
-            // Removed toggleTipsPaneBtn event listener
-            // toggleTipsPaneBtn.addEventListener('click', () => {
-            //     aiBudgetTipsSection.classList.toggle('hidden');
-            //     const isHidden = aiBudgetTipsSection.classList.contains('hidden');
-            //     toggleTipsPaneBtn.textContent = isHidden ? 'Show Tips' : 'Hide Tips';
-            //     localStorage.setItem('hideTipsPane', isHidden); 
-            // });
+            submitFeedbackBtn.addEventListener('click', saveFeedback);
         });
 
         /**
@@ -417,7 +494,7 @@
             }
 
             // Add months up to the year 2070
-            const endYear = 2070;
+            const endYear = 2100;
             for (let y = currentYear; y <= endYear; y++) {
                 for (let m = 0; m < 12; m++) {
                     // For the current year, only add future months (after currentMonth)
@@ -601,12 +678,12 @@
 
                     // Add to detailed expenses list
                     const expenseItem = document.createElement('p');
-                    expenseItem.className = 'flex justify-between items-center text-gray-700 dark:text-gray-700';
+                    expenseItem.className = 'flex justify-between items-center text-lg font-semibold text-gray-900 dark:text-gray-200';
                     expenseItem.innerHTML = `<span>${expense.name}:</span> <span class="font-medium">$${expenseAmount.toFixed(2)}</span>`;
                     detailedExpensesList.appendChild(expenseItem);
                 });
             } else {
-                detailedExpensesList.innerHTML = '<p class="text-gray-700 italic dark:text-gray-700">No expenses allocated for this month.</p>';
+                detailedExpensesList.innerHTML = '<p class="text-gray-900 italic dark:text-gray-400 text-lg font-semibold">No expenses allocated for this month.</p>';
             }
 
 
@@ -919,6 +996,48 @@
                 updateIndividualExpenseChart(expenseCategorySelect.value);
             }, 100);
         });
+
+        /**
+         * Handles saving feedback to Firestore.
+         */
+        async function saveFeedback() {
+            const feedback = feedbackText.value.trim();
+            if (!feedback) {
+                alertUser('Please enter some feedback before submitting.', 'error');
+                return;
+            }
+
+            feedbackMessage.textContent = 'Submitting feedback...';
+            feedbackMessage.className = 'mt-4 text-center text-sm font-medium text-blue-500';
+            submitFeedbackBtn.disabled = true; // Disable button during submission
+
+            try {
+                const userId = firebaseAuth.currentUser?.uid || 'anonymous'; // Get current user ID or default to 'anonymous'
+                const feedbackCollection = collection(firebaseDb, `artifacts/${firebaseAppId}/public/feedback`);
+
+                await addDoc(feedbackCollection, {
+                    feedback: feedback,
+                    userId: userId,
+                    timestamp: new Date().toISOString()
+                });
+
+                feedbackText.value = ''; // Clear textarea
+                feedbackMessage.textContent = 'Feedback received! Thank you for your input. ✨';
+                feedbackMessage.className = 'mt-4 text-center text-sm font-medium text-green-500';
+
+                setTimeout(() => {
+                    feedbackMessage.textContent = ''; // Clear message after a few seconds
+                }, 5000);
+
+            } catch (error) {
+                console.error("Error saving feedback to Firestore:", error);
+                feedbackMessage.textContent = 'Failed to submit feedback. Please try again. 😢';
+                feedbackMessage.className = 'mt-4 text-center text-sm font-medium text-red-500';
+            } finally {
+                submitFeedbackBtn.disabled = false; // Re-enable button
+            }
+        }
+
 
         /**
          * Simple custom alert function to replace window.alert().
