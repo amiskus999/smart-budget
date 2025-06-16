@@ -233,8 +233,17 @@
                     <p><strong>Remaining $:</strong> $<span id="summaryRemaining" class="font-bold">0.00</span></p>
                 </div>
 
+                <!-- Detailed Expenses List (new section) -->
+                <div id="detailedExpenses" class="mt-6 border-t pt-4 border-gray-200">
+                    <h3 class="text-xl font-semibold mb-3 text-gray-700">Allocated Expenses:</h3>
+                    <div id="detailedExpensesList" class="space-y-1 text-base">
+                        <!-- Detailed expenses will be populated here -->
+                    </div>
+                </div>
+
+
                 <!-- Chart Container -->
-                <div class="flex-grow bg-gray-50 p-4 rounded-lg shadow-inner border border-gray-100 chart-container">
+                <div class="flex-grow bg-gray-50 p-4 rounded-lg shadow-inner border border-gray-100 chart-container mt-6">
                     <canvas id="spendingChart"></canvas>
                 </div>
             </section>
@@ -277,6 +286,8 @@
         const summaryRemaining = document.getElementById('summaryRemaining');
         const spendingChartCanvas = document.getElementById('spendingChart');
         const printBudgetBtn = document.getElementById('printBudgetBtn'); 
+
+        const detailedExpensesList = document.getElementById('detailedExpensesList'); // New DOM element for detailed expenses
 
 
         // New DOM Elements for month navigation
@@ -480,7 +491,7 @@
 
             expenseItem.innerHTML = `
                 <input type="text" placeholder="Expense Name (e.g., Rent)" class="expense-name flex-grow rounded-md border-gray-300 shadow-sm p-2" value="${expenseData.name}">
-                <input type="number" placeholder="Amount" class="expense-value w-28 rounded-md border-gray-300 shadow-sm p-2">
+                <input type="number" placeholder="Amount" class="expense-value w-28 rounded-md border-gray-300 shadow-sm p-2" value="${expenseData.value}">
                 <select class="expense-type rounded-md border-gray-300 shadow-sm p-2">
                     <option value="amount" ${expenseData.type === 'amount' ? 'selected' : ''}>$</option>
                     <option value="percentage" ${expenseData.type === 'percentage' ? 'selected' : ''}>%</option>
@@ -576,13 +587,28 @@
             const selectedMonthText = monthSelect.options[monthSelect.selectedIndex].text;
 
             let totalExpenses = 0;
-            expenses.forEach(expense => {
-                if (expense.type === 'amount') {
-                    totalExpenses += expense.value;
-                } else if (expense.type === 'percentage') {
-                    totalExpenses += (income * (expense.value / 100));
+            detailedExpensesList.innerHTML = ''; // Clear previous detailed expenses
+
+            if (expenses.length > 0) {
+                expenses.forEach(expense => {
+                    let expenseAmount = 0;
+                    if (expense.type === 'amount') {
+                        expenseAmount = expense.value;
+                    } else if (expense.type === 'percentage') {
+                        expenseAmount = (income * (expense.value / 100));
                     }
-            });
+                    totalExpenses += expenseAmount;
+
+                    // Add to detailed expenses list
+                    const expenseItem = document.createElement('p');
+                    expenseItem.className = 'flex justify-between items-center text-gray-700 dark:text-gray-700';
+                    expenseItem.innerHTML = `<span>${expense.name}:</span> <span class="font-medium">$${expenseAmount.toFixed(2)}</span>`;
+                    detailedExpensesList.appendChild(expenseItem);
+                });
+            } else {
+                detailedExpensesList.innerHTML = '<p class="text-gray-700 italic dark:text-gray-700">No expenses allocated for this month.</p>';
+            }
+
 
             const remainingBudget = income - totalExpenses;
 
@@ -884,62 +910,6 @@
         expenseCategorySelect.addEventListener('change', (event) => {
             updateIndividualExpenseChart(event.target.value);
         });
-
-        // Removed LLM related event listener
-        // getBudgetTipsBtn.addEventListener('click', getBudgetOptimizationTips);
-
-        /**
-         * Removed LLM related function
-         * Fetches personalized budget optimization tips from the Gemini API.
-         */
-        // async function getBudgetOptimizationTips() {
-        //     budgetTipsOutput.innerHTML = '<div class="text-center py-4">Generating tips... <span class="animate-pulse">✨</span></div>';
-
-        //     const { income, expenses } = getCurrentBudgetInputs();
-        //     const selectedMonthText = monthSelect.options[monthSelect.selectedIndex].text;
-
-        //     let prompt = `Analyze the following budget for the month of ${selectedMonthText}:\n`;
-        //     prompt += `Monthly Income: $${income.toFixed(2)}\n`;
-        //     prompt += `Expenses:\n`;
-        //     if (expenses.length > 0) {
-        //         expenses.forEach(expense => {
-        //             prompt += `- ${expense.name}: ${expense.type === 'amount' ? '$' + expense.value.toFixed(2) : expense.value.toFixed(2) + '%'}\n`;
-        //         });
-        //     } else {
-        //         prompt += `- No specific expenses entered.\n`;
-        //     }
-
-        //     prompt += `\nBased on this data, provide actionable budget optimization tips. Focus on areas where spending might be reduced or managed more effectively. Provide tips in bullet points and make them concise.`;
-
-        //     let chatHistory = [];
-        //     chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-        //     const payload = { contents: chatHistory };
-        //     const apiKey = ""; 
-        //     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-        //     try {
-        //         const response = await fetch(apiUrl, {
-        //             method: 'POST',
-        //             headers: { 'Content-Type': 'application/json' },
-        //             body: JSON.stringify(payload)
-        //         });
-
-        //         const result = await response.json();
-        //         if (result.candidates && result.candidates.length > 0 &&
-        //             result.candidates[0].content && result.candidates[0].content.parts &&
-        //             result.candidates[0].content.parts.length > 0) {
-        //             const text = result.candidates[0].content.parts[0].text;
-        //             budgetTipsOutput.innerHTML = `<h3 class="font-semibold mb-2">Budget Tips for ${selectedMonthText}:</h3>` +
-        //                                          `<p class="whitespace-pre-wrap">${text}</p>`; 
-        //         } else {
-        //             budgetTipsOutput.innerHTML = '<p class="text-red-500">Could not generate tips. Please try again.</p>';
-        //             console.error('Gemini API response structure unexpected:', result);
-        //         }
-        //     } catch (error) {
-        //         budgetTipsOutput.innerHTML = '<p class="text-red-500">Error generating tips. Please check your network connection or try again later.</p>';
-        //         console.error('Error calling Gemini API:', error);
-        //     }
-        // }
 
         // Re-render chart on theme change to update colors
         themeToggle.addEventListener('click', () => {
