@@ -79,20 +79,41 @@
             border-color: #4a5568;
         }
 
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .container {
-                padding: 1rem;
+        /* Responsive adjustments for expense items */
+        .expense-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem; /* Consistent spacing */
+            flex-wrap: wrap; /* Allow wrapping on small screens */
+        }
+
+        .expense-item .expense-name {
+            flex-grow: 1; /* Allows it to take available space */
+            min-width: 120px; /* Minimum width to ensure readability */
+        }
+
+        .expense-item .expense-value,
+        .expense-item .expense-type {
+            flex-shrink: 0; /* Prevents these from shrinking too much */
+            flex-basis: calc(50% - 0.5rem); /* Take roughly half width on small screens */
+            max-width: 140px; /* Max width to prevent them from becoming too wide */
+        }
+
+        .expense-item .remove-expense {
+            flex-shrink: 0; /* Prevents button from shrinking */
+            margin-left: auto; /* Push button to the right if space allows */
+            order: 1; /* Keep its order consistent */
+        }
+
+        @media (max-width: 480px) { /* For very small screens, stack more aggressively */
+            .expense-item .expense-value,
+            .expense-item .expense-type {
+                flex-basis: calc(100% - 0.5rem); /* Each takes full width, stacking */
+                max-width: none; /* Remove max-width constraint */
             }
-            .grid {
-                grid-template-columns: 1fr;
-            }
-            header .flex {
-                flex-wrap: wrap;
-                gap: 0.5rem;
-            }
-            header button {
-                flex-grow: 1;
+            .expense-item .remove-expense {
+                margin-left: 0; /* Remove auto margin when stacked fully */
+                width: 100%; /* Make button take full width to be more tap-friendly */
             }
         }
 
@@ -210,14 +231,19 @@
                 <div id="expensesContainer" class="mb-6 space-y-4">
                     <h3 class="text-xl font-semibold mb-3 text-gray-700">Expenses:</h3>
                     <!-- Expense items will be dynamically added here -->
-                    <div class="expense-item flex items-center space-x-2">
-                        <input type="text" placeholder="Expense Name (e.g., Rent)" class="expense-name flex-grow rounded-md border-gray-300 shadow-sm p-2">
-                        <input type="number" placeholder="Amount" class="expense-value w-28 rounded-md border-gray-300 shadow-sm p-2">
-                        <select class="expense-type rounded-md border-gray-300 shadow-sm p-2">
+                    <div class="expense-item flex flex-wrap items-center gap-2 mb-2">
+                        <input type="text" placeholder="Expense Name (e.g., Rent)" class="expense-name flex-1 min-w-[120px] rounded-md border-gray-300 shadow-sm p-2">
+                        <input type="number" placeholder="Amount" class="expense-value w-28 sm:flex-1 sm:max-w-[140px] rounded-md border-gray-300 shadow-sm p-2">
+                        <select class="expense-type w-20 sm:flex-1 sm:max-w-[140px] rounded-md border-gray-300 shadow-sm p-2">
                             <option value="amount">$</option>
                             <option value="percentage">%</option>
                         </select>
-                        <button class="remove-expense w-8 h-8 flex items-center justify-center bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-200 text-xl font-bold">−</button>
+                        <button class="remove-expense w-8 h-8 flex-shrink-0 flex items-center justify-center bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-200 text-xl font-bold">
+                                <!-- Trash Bin SVG Icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                    <path fill-rule="evenodd" d="M16.5 4.478a.75.75 0 0 0-1.124-.03L9.42 11.026 5.854 7.46a.75.75 0 0 0-1.06 1.06l4.5 4.5a.75.75 0 0 0 1.06 0l7.5-7.5a.75.75 0 0 0 0-1.06Z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
                     </div>
                 </div>
                 <button id="addExpenseBtn" class="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition-colors duration-200 mb-4 shadow-md">➕ Add Expense</button>
@@ -478,16 +504,16 @@
          */
         function addExpenseRow(expenseData = { name: '', value: '', type: 'amount' }) {
             const expenseItem = document.createElement('div');
-            expenseItem.className = 'expense-item flex items-center space-x-2 mb-2'; 
+            expenseItem.className = 'expense-item flex flex-wrap items-center gap-2 mb-2'; 
 
             expenseItem.innerHTML = `
-                <input type="text" placeholder="Expense Name (e.g., Rent)" class="expense-name flex-grow rounded-md border-gray-300 shadow-sm p-2" value="${expenseData.name}">
-                <input type="number" placeholder="Amount" class="expense-value w-28 rounded-md border-gray-300 shadow-sm p-2" value="${expenseData.value}">
-                <select class="expense-type rounded-md border-gray-300 shadow-sm p-2">
+                <input type="text" placeholder="Expense Name (e.g., Rent)" class="expense-name flex-1 min-w-[120px] rounded-md border-gray-300 shadow-sm p-2">
+                <input type="number" placeholder="Amount" class="expense-value w-28 sm:flex-1 sm:max-w-[140px] rounded-md border-gray-300 shadow-sm p-2">
+                <select class="expense-type w-20 sm:flex-1 sm:max-w-[140px] rounded-md border-gray-300 shadow-sm p-2">
                     <option value="amount" ${expenseData.type === 'amount' ? 'selected' : ''}>$</option>
                     <option value="percentage" ${expenseData.type === 'percentage' ? 'selected' : ''}>%</option>
                 </select>
-                <button class="remove-expense w-8 h-8 flex items-center justify-center bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-200 text-xl font-bold">−</button>
+                <button class="remove-expense w-8 h-8 flex-shrink-0 flex items-center justify-center bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-200 text-xl font-bold ml-auto sm:ml-0">−</button>
             `;
             expensesContainer.appendChild(expenseItem);
 
