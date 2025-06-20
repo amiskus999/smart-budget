@@ -397,7 +397,10 @@
                 updateChart(); // Ensure charts are up-to-date before printing
                 updateIndividualExpenseChart(expenseCategorySelect.value);
 
-                window.print(); // Trigger the browser's print dialog
+               // Add a small delay to allow Chart.js to render completely before printing
+                setTimeout(() => {
+                    window.print();
+                }, 400); // 300ms delay
 
                 const restoreCharts = () => {
                     updateChart(); // Re-render main chart
